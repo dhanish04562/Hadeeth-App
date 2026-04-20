@@ -1,5 +1,4 @@
-import nuurMark from "@/assets/nuur-mark.svg";
-import nuurWordmark from "@/assets/nuur-wordmark.svg";
+import nuurLogo from "@/assets/nuur-logo.png";
 
 type NuurLogoProps = {
   compact?: boolean;
@@ -17,7 +16,7 @@ export function NuurLogo({
   if (compact) {
     return (
       <img
-        src={nuurMark}
+        src={nuurLogo}
         alt="Nuur logo"
         className={`h-9 w-9 rounded-lg ${className}`.trim()}
       />
@@ -26,17 +25,16 @@ export function NuurLogo({
 
   if (wordmark) {
     return (
-      <img
-        src={nuurWordmark}
-        alt="Nuur wordmark"
-        className={`h-10 w-auto ${className}`.trim()}
-      />
+      <div className={`flex items-center gap-3 ${className}`.trim()}>
+        <img src={nuurLogo} alt="Nuur logo" className="h-10 w-10 rounded-xl" />
+        <p className="font-serif text-3xl text-foreground">Nuur</p>
+      </div>
     );
   }
 
   return (
     <div className={`flex items-center gap-3 ${className}`.trim()}>
-      <img src={nuurMark} alt="Nuur logo" className="h-10 w-10 rounded-lg shadow-gold" />
+      <img src={nuurLogo} alt="Nuur logo" className="h-10 w-10 rounded-xl shadow-soft" />
       <div className="leading-tight">
         <p className="font-serif text-lg">Nuur</p>
         {subtitle ? (
