@@ -18,15 +18,17 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.use("/api", modulesRouter);
+const pool = require("./db/pool");
 
-if (hasClientBuild) {
-  app.use(express.static(distPath));
+app.get("/test-db", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  app.get(/^\/(?!api).*/, (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
-}
 
 app.use(notFound);
 app.use(errorHandler);
