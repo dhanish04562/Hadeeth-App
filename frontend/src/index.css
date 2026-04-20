@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Nuur — Hadeeth library design system.
+   Emerald Prestige palette. All colors HSL. */
+
+@layer base {
+  :root {
+    /* Surfaces — warm cream paper */
+    --background: 42 38% 96%;
+    --foreground: 162 40% 9%;
+
+    --card: 40 33% 98%;
+    --card-foreground: 162 40% 10%;
+
+    --popover: 40 33% 98%;
+    --popover-foreground: 162 40% 10%;
+
+    /* Brand — deep emerald + gold */
+    --primary: 162 78% 16%;
+    --primary-foreground: 42 38% 96%;
+    --primary-glow: 160 55% 32%;
+
+    --secondary: 42 28% 90%;
+    --secondary-foreground: 162 40% 14%;
+
+    --muted: 42 22% 92%;
+    --muted-foreground: 162 12% 36%;
+
+    --accent: 42 55% 54%;
+    --accent-foreground: 162 60% 10%;
+    --accent-soft: 42 60% 90%;
+
+    --destructive: 0 70% 42%;
+    --destructive-foreground: 42 38% 96%;
+
+    --border: 42 20% 86%;
+    --input: 42 20% 86%;
+    --ring: 162 60% 22%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar — emerald on cream */
+    --sidebar-background: 162 45% 12%;
+    --sidebar-foreground: 42 30% 88%;
+    --sidebar-primary: 42 55% 54%;
+    --sidebar-primary-foreground: 162 60% 10%;
+    --sidebar-accent: 162 40% 18%;
+    --sidebar-accent-foreground: 42 38% 96%;
+    --sidebar-border: 162 35% 18%;
+    --sidebar-ring: 42 55% 54%;
+
+    /* Gradients */
+    --gradient-emerald: linear-gradient(135deg, hsl(162 78% 12%), hsl(160 55% 22%));
+    --gradient-gold: linear-gradient(135deg, hsl(42 60% 50%), hsl(38 70% 62%));
+    --gradient-paper: linear-gradient(180deg, hsl(42 38% 97%), hsl(40 30% 93%));
+    --gradient-hero: linear-gradient(135deg, hsl(162 78% 10%) 0%, hsl(162 60% 16%) 50%, hsl(160 50% 22%) 100%);
+
+    /* Shadows */
+    --shadow-elegant: 0 20px 60px -20px hsl(162 78% 12% / 0.25);
+    --shadow-soft: 0 2px 12px -4px hsl(162 40% 12% / 0.08);
+    --shadow-gold: 0 10px 40px -12px hsl(42 60% 40% / 0.35);
+
+    /* Motion */
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 162 40% 7%;
+    --foreground: 42 30% 92%;
+
+    --card: 162 38% 10%;
+    --card-foreground: 42 30% 92%;
+
+    --popover: 162 38% 10%;
+    --popover-foreground: 42 30% 92%;
+
+    --primary: 42 55% 56%;
+    --primary-foreground: 162 60% 10%;
+    --primary-glow: 42 70% 64%;
+
+    --secondary: 162 30% 15%;
+    --secondary-foreground: 42 30% 92%;
+
+    --muted: 162 28% 14%;
+    --muted-foreground: 42 14% 66%;
+
+    --accent: 42 55% 54%;
+    --accent-foreground: 162 60% 10%;
+    --accent-soft: 162 35% 18%;
+
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 42 30% 92%;
+
+    --border: 162 30% 18%;
+    --input: 162 30% 18%;
+    --ring: 42 55% 54%;
+
+    --sidebar-background: 162 50% 6%;
+    --sidebar-foreground: 42 25% 84%;
+    --sidebar-primary: 42 55% 56%;
+    --sidebar-primary-foreground: 162 60% 8%;
+    --sidebar-accent: 162 38% 12%;
+    --sidebar-accent-foreground: 42 30% 92%;
+    --sidebar-border: 162 35% 14%;
+    --sidebar-ring: 42 55% 56%;
+
+    --gradient-paper: linear-gradient(180deg, hsl(162 40% 8%), hsl(162 38% 6%));
+    --gradient-hero: linear-gradient(135deg, hsl(162 60% 6%) 0%, hsl(162 50% 12%) 50%, hsl(160 40% 18%) 100%);
+    --shadow-elegant: 0 20px 60px -20px hsl(0 0% 0% / 0.6);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    font-feature-settings: "ss01", "cv11";
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Work Sans', system-ui, sans-serif;
+    font-feature-settings: "ss01";
+  }
+  h1, h2, h3, h4, .font-serif {
+    font-family: 'Instrument Serif', 'Times New Roman', serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .font-arabic {
+    font-family: 'Amiri', 'Times New Roman', serif;
+    direction: rtl;
+    line-height: 2.1;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-emerald { background: var(--gradient-emerald); }
+  .bg-gradient-gold { background: var(--gradient-gold); }
+  .bg-gradient-paper { background: var(--gradient-paper); }
+  .bg-gradient-hero { background: var(--gradient-hero); }
+  .shadow-elegant { box-shadow: var(--shadow-elegant); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-gold { box-shadow: var(--shadow-gold); }
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .arabesque {
+    background-image: radial-gradient(hsl(var(--accent) / 0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
