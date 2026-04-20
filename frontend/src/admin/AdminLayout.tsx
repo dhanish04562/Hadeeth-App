@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NuurLogo } from "@/components/NuurLogo";
 
 const nav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -32,31 +33,23 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen w-full bg-gradient-paper">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-        <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-gold shadow-gold">
-            <span className="font-serif text-xl text-primary">ن</span>
-          </div>
-          <div className="leading-tight">
-            <p className="font-serif text-lg">Nuur</p>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/60">
-              Admin Console
-            </p>
-          </div>
+        <div className="border-b border-sidebar-border px-5 py-5">
+          <NuurLogo subtitle="Admin Console" className="text-sidebar-foreground" />
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
-          {nav.map((n) => (
+          {nav.map((item) => (
             <Link
-              key={n.to}
-              to={n.to}
+              key={item.to}
+              to={item.to}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                isActive(n.to, n.end)
+                isActive(item.to, item.end)
                   ? "bg-sidebar-accent text-sidebar-primary"
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
               }`}
             >
-              <n.icon className="h-4 w-4" />
-              {n.label}
+              <item.icon className="h-4 w-4" />
+              {item.label}
             </Link>
           ))}
         </nav>
@@ -100,19 +93,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </Button>
         </header>
 
-        {/* Mobile nav */}
         <nav className="flex gap-1 overflow-x-auto border-b border-border bg-card px-3 py-2 md:hidden">
-          {nav.map((n) => (
+          {nav.map((item) => (
             <Link
-              key={n.to}
-              to={n.to}
+              key={item.to}
+              to={item.to}
               className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs ${
-                isActive(n.to, n.end)
+                isActive(item.to, item.end)
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              {n.label}
+              {item.label}
             </Link>
           ))}
         </nav>

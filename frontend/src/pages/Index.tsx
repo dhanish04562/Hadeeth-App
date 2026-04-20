@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { Link } from "react-router-dom";
 import { useDB } from "@/data/store";
 import { HadeethCard } from "@/components/HadeethCard";
+import { NuurLogo } from "@/components/NuurLogo";
 import heroPattern from "@/assets/hero-pattern.jpg";
 import { ArrowRight, BookOpenText, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,8 @@ const Index = () => {
   const { books, hadeeth, isLoading } = useDB();
   const published = hadeeth.filter((item) => item.isPublished);
   const featured = published[0] || hadeeth[0];
-  const today = published[Math.floor(Date.now() / 86400000) % Math.max(published.length, 1)] || featured;
+  const today =
+    published[Math.floor(Date.now() / 86400000) % Math.max(published.length, 1)] || featured;
   const firstBook = books[0];
 
   return (
@@ -31,11 +33,12 @@ const Index = () => {
           </Badge>
           <h1 className="max-w-4xl font-serif text-5xl leading-[1.05] text-primary-foreground md:text-7xl lg:text-8xl">
             Where the words of the
-            <span className="block italic text-gradient-gold">Beloved ï·º</span>
+            <span className="block italic text-gradient-gold">Beloved Prophet</span>
             meet timeless design.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-primary-foreground/70 md:text-lg">
-            Read, search and reflect on authentic hadeeth from the great collections â€” beautifully typeset, lightning fast, distraction-free.
+            Read, search and reflect on authentic hadeeth from the great collections - beautifully
+            typeset, lightning fast, distraction-free.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -107,10 +110,10 @@ const Index = () => {
                 {today?.arabic || ""}
               </p>
               <p className="mt-5 font-serif text-lg italic text-primary-foreground/80">
-                â€œ{today?.english || (isLoading ? "Loading..." : "No hadeeth available.")}â€
+                "{today?.english || (isLoading ? "Loading..." : "No hadeeth available.")}"
               </p>
               <p className="mt-4 text-xs text-primary-foreground/60">
-                â€” Reported by {today?.reportedBy || "N/A"}
+                - Reported by {today?.reportedBy || "N/A"}
               </p>
             </div>
             <div className="arabesque rounded-2xl border border-border bg-card p-8">
@@ -135,7 +138,7 @@ const Index = () => {
             to="/collections"
             className="hidden text-sm text-primary hover:text-primary-glow md:inline-flex"
           >
-            View all â†’
+            View all {"->"}
           </Link>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -162,7 +165,7 @@ const Index = () => {
                   {book.hadeethCount.toLocaleString()} narrations
                 </span>
                 <span className="font-medium text-primary transition-transform group-hover:translate-x-1">
-                  Open â†’
+                  Open {"->"}
                 </span>
               </div>
             </Link>
@@ -172,12 +175,10 @@ const Index = () => {
 
       <footer className="border-t border-border bg-card/50">
         <div className="container flex flex-col items-center gap-3 px-6 py-12 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-gold shadow-gold">
-            <span className="font-serif text-xl text-primary">Ù†</span>
-          </div>
-          <p className="font-serif text-2xl text-foreground">Nuur</p>
+          <NuurLogo wordmark className="h-12" />
           <p className="max-w-md text-sm text-muted-foreground">
-            Built with reverence. A modern reading experience for the timeless words of the Prophet ï·º.
+            Built with reverence. A modern reading experience for the timeless words of the
+            Prophet.
           </p>
         </div>
       </footer>

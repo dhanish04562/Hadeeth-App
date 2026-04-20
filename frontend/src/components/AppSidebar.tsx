@@ -14,6 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useDB } from "@/data/store";
+import { NuurLogo } from "./NuurLogo";
 
 const nav = [
   { title: "Home", url: "/", icon: Home },
@@ -34,16 +35,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
         <Link to="/" className="flex items-center gap-3 px-2 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-gold shadow-gold">
-            <span className="font-serif text-xl text-primary">ن</span>
-          </div>
-          {!collapsed && (
-            <div className="flex flex-col leading-tight">
-              <span className="font-serif text-xl text-sidebar-foreground">Nuur</span>
-              <span className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/60">
-                Hadeeth Library
-              </span>
-            </div>
+          {collapsed ? (
+            <NuurLogo compact />
+          ) : (
+            <NuurLogo subtitle="Hadeeth Library" className="text-sidebar-foreground" />
           )}
         </Link>
       </SidebarHeader>
@@ -75,16 +70,16 @@ export function AppSidebar() {
           <SidebarGroupLabel>Collections</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {books.map((b) => (
-                <SidebarMenuItem key={b.id}>
+              {books.map((book) => (
+                <SidebarMenuItem key={book.id}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === `/book/${b.id}`}
-                    tooltip={b.title}
+                    isActive={pathname === `/book/${book.id}`}
+                    tooltip={book.title}
                   >
-                    <Link to={`/book/${b.id}`}>
+                    <Link to={`/book/${book.id}`}>
                       <BookOpen className="h-4 w-4" />
-                      <span className="truncate">{b.title}</span>
+                      <span className="truncate">{book.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -98,13 +93,13 @@ export function AppSidebar() {
         {!collapsed && (
           <>
             <p className="px-3 py-2 text-[11px] leading-relaxed text-sidebar-foreground/50">
-              “The ink of the scholar is more sacred than the blood of the martyr.”
+              â€œThe ink of the scholar is more sacred than the blood of the martyr.â€
             </p>
             <Link
               to="/admin"
               className="mx-2 mb-1 rounded-md px-2 py-1.5 text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
             >
-              Admin →
+              Admin â†’
             </Link>
           </>
         )}
