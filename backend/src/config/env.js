@@ -13,7 +13,7 @@ function parseBoolean(value, fallback) {
 const env = {
   port: Number(process.env.PORT) || 4000,
   databaseUrl: process.env.DATABASE_URL,
-  useMockApi: parseBoolean(process.env.USE_MOCK_API, true)
+  useMockApi: parseBoolean(process.env.USE_MOCK_API, false)
 };
 
 if (!env.useMockApi && !env.databaseUrl) {
