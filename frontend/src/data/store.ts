@@ -236,7 +236,9 @@ function normalize(raw: RawCache): DB {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+  const API = import.meta.env.VITE_API_URL;
+
+  const response = await fetch(`${API}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers || {}),
