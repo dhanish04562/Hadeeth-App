@@ -16,10 +16,27 @@ app.use(express.urlencoded({ extended: true }));
 const defaultOrigins = ["http://localhost:8080", "http://localhost:5173"];
 const allowedOrigins = new Set([...defaultOrigins, ...env.allowedOrigins]);
 
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return false;
+  }
+
+  if (allowedOrigins.has(origin)) {
+    return true;
+  }
+
+  // Allow Netlify preview and production domains without requiring manual env updates.
+  try {
+    return /\.netlify\.app$/i.test(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  if (origin && allowedOrigins.has(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
     res.header("Vary", "Origin");
     res.header("Access-Control-Allow-Credentials", "true");
