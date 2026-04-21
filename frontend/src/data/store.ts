@@ -236,7 +236,10 @@ function normalize(raw: RawCache): DB {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const API = import.meta.env.VITE_API_URL;
+  const API = import.meta.env.VITE_API_URL || "";
+  if (!API) {
+    throw new Error("Missing VITE_API_URL. Set it in your frontend environment.");
+  }
 
   const response = await fetch(`${API}${path}`, {
     headers: {

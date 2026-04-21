@@ -29,6 +29,8 @@ app.get("/test-db", async (req, res) => {
   }
 });
 
+app.use("/api", modulesRouter);
+
 
 app.use(notFound);
 app.use(errorHandler);
