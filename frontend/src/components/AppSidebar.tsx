@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Home, Bookmark, Sparkles, Library } from "lucide-react";
+import { BookOpen, Bookmark, Library } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,9 +17,7 @@ import { useDB } from "@/data/store";
 import { NuurLogo } from "./NuurLogo";
 
 const nav = [
-  { title: "Home", url: "/", icon: Home },
   { title: "Collections", url: "/collections", icon: Library },
-  { title: "Daily Hadeeth", url: "/daily", icon: Sparkles },
   { title: "Bookmarks", url: "/bookmarks", icon: Bookmark },
 ];
 
@@ -34,7 +32,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
-        <Link to="/" className="flex items-center gap-3 px-2 py-3">
+        <Link to="/collections" className="flex items-center gap-3 px-2 py-3">
           {collapsed ? (
             <NuurLogo compact />
           ) : (
