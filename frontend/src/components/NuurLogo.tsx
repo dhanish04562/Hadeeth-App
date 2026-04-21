@@ -1,4 +1,4 @@
-import nuurLogo from "/favicon.svg";
+import nuurLogo from "/favicon.png";
 
 type NuurLogoProps = {
   compact?: boolean;
