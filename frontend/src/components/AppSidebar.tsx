@@ -93,13 +93,13 @@ export function AppSidebar() {
         {!collapsed && (
           <>
             <p className="px-3 py-2 text-[11px] leading-relaxed text-sidebar-foreground/50">
-              â€œThe ink of the scholar is more sacred than the blood of the martyr.â€
+              "The ink of the scholar is more sacred than the blood of the martyr."
             </p>
             <Link
               to="/admin"
               className="mx-2 mb-1 rounded-md px-2 py-1.5 text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
             >
-              Admin â†’
+              Admin ->
             </Link>
           </>
         )}
