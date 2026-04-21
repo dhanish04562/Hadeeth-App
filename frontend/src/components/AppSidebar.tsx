@@ -99,7 +99,7 @@ export function AppSidebar() {
               to="/admin"
               className="mx-2 mb-1 rounded-md px-2 py-1.5 text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
             >
-              Admin ->
+              Admin {"->"}
             </Link>
           </>
         )}
