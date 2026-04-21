@@ -33,7 +33,7 @@ const Index = () => {
           </Badge>
           <h1 className="max-w-4xl font-serif text-5xl leading-[1.05] text-primary-foreground md:text-7xl lg:text-8xl">
             Where the words of the
-            <span className="block italic text-gradient-gold">Beloved Prophet</span>
+            <span className="block italic text-gradient-gold">Beloved Prophet صلى الله عليه وسلم</span>
             meet timeless design.
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-primary-foreground/70 md:text-lg">
