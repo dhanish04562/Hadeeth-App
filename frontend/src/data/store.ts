@@ -50,37 +50,47 @@ type DB = {
 type RawLanguage = {
   code: string;
   name?: string;
-  nativeName?: string;
-  direction?: "ltr" | "rtl";
 };
 
 type RawBook = {
   id: string;
-  slug?: string;
-  collectionNumber?: string;
+  title?: string;
   author?: string;
+  notes?: string;
   isPublished?: boolean;
-  translations?: Record<string, { title?: string; summary?: string }>;
+  is_published?: boolean;
+  langCode?: string;
+  lang_code?: string;
 };
 
 type RawChapter = {
   id: string;
-  bookId: string;
+  bookId?: string;
+  book_id?: string;
   parentId?: string | null;
-  chapterNumber?: number;
+  parent_id?: string | null;
+  title?: string;
   isPublished?: boolean;
-  translations?: Record<string, { title?: string; introduction?: string }>;
+  is_published?: boolean;
+  notes?: string;
+  langCode?: string;
+  lang_code?: string;
 };
 
 type RawHadeeth = {
   id: string;
-  chapterId: string;
-  hadithNumber?: number;
+  chapterId?: string;
+  chapter_id?: string;
+  hadeeth?: string;
   referenceNumber?: string | number;
+  refernce_number?: string | number;
   reportedBy?: string;
-  grade?: "Sahih" | "Hasan" | "Da'if" | "";
+  reported_by?: string;
   isPublished?: boolean;
-  translations?: Record<string, { text?: string; notes?: string }>;
+  is_published?: boolean;
+  notes?: string;
+  langCode?: string;
+  lang_code?: string;
 };
 
 type RawCache = {
@@ -128,41 +138,10 @@ function getSnapshot() {
   return state;
 }
 
-function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function chooseTranslation<T extends object>(
-  translations: Record<string, T> | undefined
-) {
-  if (!translations) {
-    return { code: "ar", value: {} as T };
-  }
-
-  const entries = Object.entries(translations);
-  const preferred =
-    entries.find(([code]) => code === "en") ||
-    entries.find(([code]) => code !== "ar") ||
-    entries.find(([code]) => code === "ar") ||
-    entries[0];
-
-  return preferred
-    ? { code: preferred[0], value: preferred[1] }
-    : { code: "ar", value: {} as T };
-}
-
-function getArabicTranslation<T extends object>(
-  translations: Record<string, T> | undefined
-) {
-  return translations?.ar || Object.values(translations || {})[0] || ({} as T);
-}
-
 function normalize(raw: RawCache): DB {
-  const chapterBookMap = new Map(raw.chapters.map((chapter) => [chapter.id, chapter.bookId]));
+  const chapterBookMap = new Map(
+    raw.chapters.map((chapter) => [chapter.id, chapter.book_id || chapter.bookId || ""])
+  );
   const chapterCounts = new Map<string, number>();
   const bookCounts = new Map<string, number>();
 
@@ -175,54 +154,51 @@ function normalize(raw: RawCache): DB {
   }
 
   const books = raw.books.map((book) => {
-    const translation = chooseTranslation(book.translations);
     return {
       id: book.id,
-      title: String(translation.value.title || book.slug || "Untitled collection"),
+      title: String(book.title || "Untitled collection"),
       author: String(book.author || ""),
-      notes: String(translation.value.summary || ""),
+      notes: String(book.notes || ""),
       hadeethCount: bookCounts.get(book.id) || 0,
-      era: book.collectionNumber ? `Collection ${book.collectionNumber}` : "",
-      langCode: translation.code,
-      isPublished: Boolean(book.isPublished),
+      era: "",
+      langCode: String(book.lang_code || book.langCode || ""),
+      isPublished: Boolean(book.is_published ?? book.isPublished),
     };
   });
 
   const chapters = raw.chapters.map((chapter) => {
-    const translation = chooseTranslation(chapter.translations);
     return {
       id: chapter.id,
-      bookId: chapter.bookId,
-      parentId: chapter.parentId ?? null,
-      title: String(translation.value.title || "Untitled chapter"),
+      bookId: String(chapter.book_id || chapter.bookId || ""),
+      parentId: chapter.parent_id ?? chapter.parentId ?? null,
+      title: String(chapter.title || "Untitled chapter"),
       hadeethCount: chapterCounts.get(chapter.id) || 0,
-      langCode: translation.code,
-      isPublished: Boolean(chapter.isPublished),
-      notes: String(translation.value.introduction || ""),
+      langCode: String(chapter.lang_code || chapter.langCode || ""),
+      isPublished: Boolean(chapter.is_published ?? chapter.isPublished),
+      notes: String(chapter.notes || ""),
     };
   });
 
   const hadeeth = raw.hadeeth.map((item) => {
-    const translation = chooseTranslation(item.translations);
-    const arabic = getArabicTranslation(item.translations);
+    const text = String(item.hadeeth || "");
     return {
       id: item.id,
-      bookId: chapterBookMap.get(item.chapterId) || "",
-      chapterId: item.chapterId,
-      referenceNumber: Number(item.referenceNumber || item.hadithNumber || 0),
-      reportedBy: String(item.reportedBy || ""),
-      arabic: String(arabic.text || ""),
-      english: String(translation.value.text || ""),
-      grade: (item.grade || "") as "" | "Sahih" | "Hasan" | "Da'if",
-      notes: String(translation.value.notes || ""),
-      langCode: translation.code,
-      isPublished: Boolean(item.isPublished),
+      bookId: chapterBookMap.get(item.chapter_id || item.chapterId || "") || "",
+      chapterId: String(item.chapter_id || item.chapterId || ""),
+      referenceNumber: Number(item.refernce_number || item.referenceNumber || 0),
+      reportedBy: String(item.reported_by || item.reportedBy || ""),
+      arabic: "",
+      english: text,
+      grade: "" as "" | "Sahih" | "Hasan" | "Da'if",
+      notes: String(item.notes || ""),
+      langCode: String(item.lang_code || item.langCode || ""),
+      isPublished: Boolean(item.is_published ?? item.isPublished),
     };
   });
 
   const languages = raw.languages.map((language) => ({
     code: language.code,
-    name: language.nativeName || language.name || language.code,
+    name: language.name || language.code,
   }));
 
   return {
@@ -312,29 +288,6 @@ export function useDB(): DB {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-function nextCollectionNumber() {
-  const existing = rawCache.books
-    .map((book) => Number(book.collectionNumber))
-    .filter((value) => Number.isFinite(value));
-  return String((Math.max(0, ...existing) || 0) + 1);
-}
-
-function nextChapterNumber(bookId: string) {
-  const existing = rawCache.chapters
-    .filter((chapter) => chapter.bookId === bookId)
-    .map((chapter) => Number(chapter.chapterNumber))
-    .filter((value) => Number.isFinite(value));
-  return (Math.max(0, ...existing) || 0) + 1;
-}
-
-function nextHadithNumber(chapterId: string) {
-  const existing = rawCache.hadeeth
-    .filter((item) => item.chapterId === chapterId)
-    .map((item) => Number(item.hadithNumber))
-    .filter((value) => Number.isFinite(value));
-  return (Math.max(0, ...existing) || 0) + 1;
-}
-
 export const db = {
   getAll: () => state,
   getBook: (id: string) => state.books.find((book) => book.id === id),
@@ -345,23 +298,15 @@ export const db = {
   getChapter: (id: string) => state.chapters.find((chapter) => chapter.id === id),
   refresh: () => initializeDB(),
   upsertBook: async (book: Book) => {
-    const existing = rawCache.books.find((item) => item.id === book.id);
-    const langCode = book.langCode || (existing?.translations?.en ? "en" : "ta");
     const payload = {
-      slug: existing?.slug || slugify(book.title),
-      collectionNumber: existing?.collectionNumber || nextCollectionNumber(),
+      title: book.title,
       author: book.author,
-      isPublished: book.isPublished,
-      translations: {
-        ...(existing?.translations || {}),
-        [langCode]: {
-          title: book.title,
-          summary: book.notes,
-        },
-      },
+      notes: book.notes,
+      is_published: book.isPublished,
+      lang_code: book.langCode || null,
     };
 
-    if (existing) {
+    if (book.id && rawCache.books.some((item) => item.id === book.id)) {
       await apiFetch(`/api/admin/books/${book.id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
@@ -380,22 +325,16 @@ export const db = {
     await loadAll();
   },
   upsertChapter: async (chapter: Chapter) => {
-    const existing = rawCache.chapters.find((item) => item.id === chapter.id);
     const payload = {
-      bookId: chapter.bookId,
-      parentId: existing?.parentId || null,
-      chapterNumber: existing?.chapterNumber || nextChapterNumber(chapter.bookId),
-      isPublished: chapter.isPublished,
-      translations: {
-        ...(existing?.translations || {}),
-        [chapter.langCode || "ta"]: {
-          title: chapter.title,
-          introduction: chapter.notes || "",
-        },
-      },
+      title: chapter.title,
+      book_id: chapter.bookId || null,
+      parent_id: chapter.parentId || null,
+      is_published: chapter.isPublished,
+      notes: chapter.notes || "",
+      lang_code: chapter.langCode || null,
     };
 
-    if (existing) {
+    if (chapter.id && rawCache.chapters.some((item) => item.id === chapter.id)) {
       await apiFetch(`/api/admin/chapters/${chapter.id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
@@ -414,31 +353,17 @@ export const db = {
     await loadAll();
   },
   upsertHadeeth: async (item: Hadeeth) => {
-    const existing = rawCache.hadeeth.find((entry) => entry.id === item.id);
-    const displayLang = item.langCode && item.langCode !== "ar" ? item.langCode : "ta";
     const payload = {
-      chapterId: item.chapterId,
-      hadithNumber: existing?.hadithNumber || item.referenceNumber || nextHadithNumber(item.chapterId),
-      referenceNumber: String(item.referenceNumber || ""),
-      reportedBy: item.reportedBy,
-      grade: item.grade || "",
-      isPublished: item.isPublished,
-      translations: {
-        ...(existing?.translations || {}),
-        ar: {
-          ...(existing?.translations?.ar || {}),
-          text: item.arabic,
-          notes: existing?.translations?.ar?.notes || "",
-        },
-        [displayLang]: {
-          ...(existing?.translations?.[displayLang] || {}),
-          text: item.english,
-          notes: item.notes || "",
-        },
-      },
+      chapter_id: item.chapterId || null,
+      hadeeth: item.english || item.arabic || "",
+      refernce_number: item.referenceNumber || 0,
+      reported_by: item.reportedBy,
+      is_published: item.isPublished,
+      notes: item.notes || "",
+      lang_code: item.langCode || null,
     };
 
-    if (existing) {
+    if (item.id && rawCache.hadeeth.some((entry) => entry.id === item.id)) {
       await apiFetch(`/api/admin/hadeeth/${item.id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
