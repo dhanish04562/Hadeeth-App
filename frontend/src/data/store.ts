@@ -213,7 +213,7 @@ function normalize(raw: RawCache): DB {
       reportedBy: String(item.reportedBy || ""),
       arabic: String(arabic.text || ""),
       english: String(translation.value.text || ""),
-      grade: item.grade || "",
+      grade: (item.grade || "") as "" | "Sahih" | "Hasan" | "Da'if",
       notes: String(translation.value.notes || ""),
       langCode: translation.code,
       isPublished: Boolean(item.isPublished),
