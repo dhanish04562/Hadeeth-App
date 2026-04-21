@@ -1,142 +1,206 @@
 const express = require("express");
-const pool = require("../../db/pool");
+const asyncHandler = require("../../middlewares/async-handler");
+const booksService = require("../books/books.service");
+const chaptersService = require("../chapters/chapters.service");
+const hadeethService = require("../hadeeth/hadeeth.service");
+const languagesService = require("../languages/languages.service");
 
 const router = express.Router();
 
-router.get("/books", (req, res) => {
-  res.json(store.adminList("books"));
-});
+router.get(
+  "/books",
+  asyncHandler(async (req, res) => {
+    const records = await booksService.listBooks(req.query);
+    res.json(records);
+  })
+);
 
-router.post("/books", (req, res) => {
-  res.status(201).json(store.createBook(req.body));
-});
+router.post(
+  "/books",
+  asyncHandler(async (req, res) => {
+    const record = await booksService.createBook(req.body);
+    res.status(201).json(record);
+  })
+);
 
-router.get("/books/:id", (req, res) => {
-  const record = store.adminGet("books", req.params.id);
+router.get(
+  "/books/:id",
+  asyncHandler(async (req, res) => {
+    const record = await booksService.getBookById(req.params.id);
+    if (!record) {
+      return res.status(404).json({ message: "Book not found." });
+    }
+    return res.json(record);
+  })
+);
 
+async function updateBook(req, res) {
+  const record = await booksService.updateBook(req.params.id, req.body);
   if (!record) {
     return res.status(404).json({ message: "Book not found." });
   }
-
   return res.json(record);
-});
+}
 
-router.put("/books/:id", (req, res) => {
-  const record = store.updateBook(req.params.id, req.body);
+router.patch("/books/:id", asyncHandler(updateBook));
+router.put("/books/:id", asyncHandler(updateBook));
 
-  if (!record) {
-    return res.status(404).json({ message: "Book not found." });
-  }
+router.delete(
+  "/books/:id",
+  asyncHandler(async (req, res) => {
+    const removed = await booksService.deleteBook(req.params.id);
+    return removed ? res.status(204).send() : res.status(404).json({ message: "Book not found." });
+  })
+);
 
-  return res.json(record);
-});
+router.get(
+  "/chapters",
+  asyncHandler(async (req, res) => {
+    const records = await chaptersService.listChapters({
+      ...req.query,
+      book_id: req.query.bookId || req.query.book_id
+    });
+    res.json(records);
+  })
+);
 
-router.delete("/books/:id", (req, res) => {
-  const removed = store.deleteBook(req.params.id);
-  return removed ? res.status(204).send() : res.status(404).json({ message: "Book not found." });
-});
+router.post(
+  "/chapters",
+  asyncHandler(async (req, res) => {
+    const record = await chaptersService.createChapter(req.body);
+    res.status(201).json(record);
+  })
+);
 
-router.get("/chapters", (req, res) => {
-  res.json(store.adminList("chapters", req.query.bookId));
-});
+router.get(
+  "/chapters/:id",
+  asyncHandler(async (req, res) => {
+    const record = await chaptersService.getChapterById(req.params.id);
+    if (!record) {
+      return res.status(404).json({ message: "Chapter not found." });
+    }
+    return res.json(record);
+  })
+);
 
-router.post("/chapters", (req, res) => {
-  res.status(201).json(store.createChapter(req.body));
-});
-
-router.get("/chapters/:id", (req, res) => {
-  const record = store.adminGet("chapters", req.params.id);
-
+async function updateChapter(req, res) {
+  const record = await chaptersService.updateChapter(req.params.id, req.body);
   if (!record) {
     return res.status(404).json({ message: "Chapter not found." });
   }
-
   return res.json(record);
-});
+}
 
-router.put("/chapters/:id", (req, res) => {
-  const record = store.updateChapter(req.params.id, req.body);
+router.patch("/chapters/:id", asyncHandler(updateChapter));
+router.put("/chapters/:id", asyncHandler(updateChapter));
 
-  if (!record) {
-    return res.status(404).json({ message: "Chapter not found." });
-  }
+router.delete(
+  "/chapters/:id",
+  asyncHandler(async (req, res) => {
+    const removed = await chaptersService.deleteChapter(req.params.id);
+    return removed
+      ? res.status(204).send()
+      : res.status(404).json({ message: "Chapter not found." });
+  })
+);
 
-  return res.json(record);
-});
+router.get(
+  "/hadeeth",
+  asyncHandler(async (req, res) => {
+    const records = await hadeethService.listHadeeth({
+      ...req.query,
+      chapter_id: req.query.chapterId || req.query.chapter_id
+    });
+    res.json(records);
+  })
+);
 
-router.delete("/chapters/:id", (req, res) => {
-  const removed = store.deleteChapter(req.params.id);
-  return removed ? res.status(204).send() : res.status(404).json({ message: "Chapter not found." });
-});
+router.post(
+  "/hadeeth",
+  asyncHandler(async (req, res) => {
+    const record = await hadeethService.createHadeeth(req.body);
+    res.status(201).json(record);
+  })
+);
 
-router.get("/hadeeth", (req, res) => {
-  res.json(store.adminList("hadeeth", req.query.chapterId));
-});
+router.get(
+  "/hadeeth/:id",
+  asyncHandler(async (req, res) => {
+    const record = await hadeethService.getHadeethById(req.params.id);
+    if (!record) {
+      return res.status(404).json({ message: "Hadeeth not found." });
+    }
+    return res.json(record);
+  })
+);
 
-router.post("/hadeeth", (req, res) => {
-  res.status(201).json(store.createHadeeth(req.body));
-});
-
-router.get("/hadeeth/:id", (req, res) => {
-  const record = store.adminGet("hadeeth", req.params.id);
-
+async function updateHadeeth(req, res) {
+  const record = await hadeethService.updateHadeeth(req.params.id, req.body);
   if (!record) {
     return res.status(404).json({ message: "Hadeeth not found." });
   }
-
   return res.json(record);
-});
+}
 
-router.put("/hadeeth/:id", (req, res) => {
-  const record = store.updateHadeeth(req.params.id, req.body);
+router.patch("/hadeeth/:id", asyncHandler(updateHadeeth));
+router.put("/hadeeth/:id", asyncHandler(updateHadeeth));
 
-  if (!record) {
-    return res.status(404).json({ message: "Hadeeth not found." });
-  }
+router.delete(
+  "/hadeeth/:id",
+  asyncHandler(async (req, res) => {
+    const removed = await hadeethService.deleteHadeeth(req.params.id);
+    return removed
+      ? res.status(204).send()
+      : res.status(404).json({ message: "Hadeeth not found." });
+  })
+);
 
-  return res.json(record);
-});
+router.get(
+  "/languages",
+  asyncHandler(async (req, res) => {
+    const records = await languagesService.listLanguages(req.query);
+    res.json(records);
+  })
+);
 
-router.delete("/hadeeth/:id", (req, res) => {
-  const removed = store.deleteHadeeth(req.params.id);
-  return removed
-    ? res.status(204).send()
-    : res.status(404).json({ message: "Hadeeth not found." });
-});
+router.post(
+  "/languages",
+  asyncHandler(async (req, res) => {
+    const record = await languagesService.createLanguage(req.body);
+    res.status(201).json(record);
+  })
+);
 
-router.get("/languages", (req, res) => {
-  res.json(store.adminList("languages"));
-});
+router.get(
+  "/languages/:code",
+  asyncHandler(async (req, res) => {
+    const record = await languagesService.getLanguageByCode(req.params.code);
+    if (!record) {
+      return res.status(404).json({ message: "Language not found." });
+    }
+    return res.json(record);
+  })
+);
 
-router.post("/languages", (req, res) => {
-  res.status(201).json(store.createLanguage(req.body));
-});
-
-router.get("/languages/:code", (req, res) => {
-  const record = store.adminGet("languages", req.params.code);
-
+async function updateLanguage(req, res) {
+  const record = await languagesService.updateLanguage(req.params.code, req.body);
   if (!record) {
     return res.status(404).json({ message: "Language not found." });
   }
-
   return res.json(record);
-});
+}
 
-router.patch("/languages/:code", (req, res) => {
-  const record = store.updateLanguage(req.params.code, req.body);
+router.patch("/languages/:code", asyncHandler(updateLanguage));
+router.put("/languages/:code", asyncHandler(updateLanguage));
 
-  if (!record) {
-    return res.status(404).json({ message: "Language not found." });
-  }
-
-  return res.json(record);
-});
-
-router.delete("/languages/:code", (req, res) => {
-  const removed = store.deleteLanguage(req.params.code);
-  return removed
-    ? res.status(204).send()
-    : res.status(404).json({ message: "Language not found." });
-});
+router.delete(
+  "/languages/:code",
+  asyncHandler(async (req, res) => {
+    const removed = await languagesService.deleteLanguage(req.params.code);
+    return removed
+      ? res.status(204).send()
+      : res.status(404).json({ message: "Language not found." });
+  })
+);
 
 module.exports = router;
