@@ -1,5 +1,5 @@
 const express = require("express");
-const store = require("../../mock/store");
+const pool = require("../../db/pool");
 
 const router = express.Router();
 
