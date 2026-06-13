@@ -67,6 +67,61 @@ const ChaptersAdmin = () => {
     }
   };
 
+  const handleBulkImport = async (file: File) => {
+    try {
+      let data: any[] = [];
+
+      if (file.name.endsWith(".json")) {
+        const text = await file.text();
+        data = JSON.parse(text);
+      } else if (file.name.endsWith(".csv")) {
+        const text = await file.text();
+        const lines = text.split("\n").filter((line) => line.trim());
+        const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        data = lines.slice(1).map((line) => {
+          const values = line.split(",").map((v) => v.trim());
+          return headers.reduce((obj, header, i) => {
+            obj[header] = values[i] || "";
+            return obj;
+          }, {} as Record<string, string>);
+        });
+      } else {
+        return toast.error("Please upload a JSON or CSV file");
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return toast.error("File must contain an array of chapters");
+      }
+
+      let imported = 0;
+      for (const item of data) {
+        const chapter: Chapter = {
+          id: item.id || "",
+          bookId: String(item.book_id || item.bookId || ""),
+          parentId: item.parent_id ?? item.parentId ?? null,
+          title: String(item.title || ""),
+          hadeethCount: Number(item.hadeeth_count || item.hadeethCount || 0),
+          langCode: String(item.lang_code || item.langCode || "ta"),
+          isPublished: Boolean(item.is_published ?? item.isPublished ?? true),
+          notes: String(item.notes || ""),
+        };
+
+        if (chapter.title.trim() && chapter.bookId) {
+          try {
+            await db.upsertChapter(chapter);
+            imported++;
+          } catch (error) {
+            console.error(`Failed to import chapter "${chapter.title}":`, error);
+          }
+        }
+      }
+
+      toast.success(`Imported ${imported} chapter(s)`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to import chapters");
+    }
+  };
+
   return (
     <AdminLayout>
       <AdminPageHeader
@@ -76,6 +131,8 @@ const ChaptersAdmin = () => {
           setEditing({ ...empty, bookId: bookFilter !== "all" ? bookFilter : books[0]?.id || "" })
         }
         createLabel="New chapter"
+        onUpload={handleBulkImport}
+        uploadLabel="Import chapters"
         search={q}
         onSearch={setQ}
         searchPlaceholder="Search chapters…"

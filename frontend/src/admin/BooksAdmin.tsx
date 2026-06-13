@@ -68,6 +68,61 @@ const BooksAdmin = () => {
     }
   };
 
+  const handleBulkImport = async (file: File) => {
+    try {
+      let data: any[] = [];
+
+      if (file.name.endsWith(".json")) {
+        const text = await file.text();
+        data = JSON.parse(text);
+      } else if (file.name.endsWith(".csv")) {
+        const text = await file.text();
+        const lines = text.split("\n").filter((line) => line.trim());
+        const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        data = lines.slice(1).map((line) => {
+          const values = line.split(",").map((v) => v.trim());
+          return headers.reduce((obj, header, i) => {
+            obj[header] = values[i] || "";
+            return obj;
+          }, {} as Record<string, string>);
+        });
+      } else {
+        return toast.error("Please upload a JSON or CSV file");
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return toast.error("File must contain an array of books");
+      }
+
+      let imported = 0;
+      for (const item of data) {
+        const book: Book = {
+          id: item.id || "",
+          title: String(item.title || ""),
+          author: String(item.author || ""),
+          notes: String(item.notes || ""),
+          hadeethCount: Number(item.hadeeth_count || item.hadeethCount || 0),
+          era: String(item.era || ""),
+          langCode: String(item.lang_code || item.langCode || "ta"),
+          isPublished: Boolean(item.is_published ?? item.isPublished ?? true),
+        };
+
+        if (book.title.trim()) {
+          try {
+            await db.upsertBook(book);
+            imported++;
+          } catch (error) {
+            console.error(`Failed to import book "${book.title}":`, error);
+          }
+        }
+      }
+
+      toast.success(`Imported ${imported} book(s)`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to import books");
+    }
+  };
+
   return (
     <AdminLayout>
       <AdminPageHeader
@@ -75,6 +130,8 @@ const BooksAdmin = () => {
         subtitle="The top-level collections in the library."
         onCreate={() => setEditing({ ...empty })}
         createLabel="New book"
+        onUpload={handleBulkImport}
+        uploadLabel="Import books"
         search={q}
         onSearch={setQ}
         searchPlaceholder="Search books or authors…"

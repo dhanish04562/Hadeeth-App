@@ -40,6 +40,55 @@ const LanguagesAdmin = () => {
     }
   };
 
+  const handleBulkImport = async (file: File) => {
+    try {
+      let data: any[] = [];
+
+      if (file.name.endsWith(".json")) {
+        const text = await file.text();
+        data = JSON.parse(text);
+      } else if (file.name.endsWith(".csv")) {
+        const text = await file.text();
+        const lines = text.split("\n").filter((line) => line.trim());
+        const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        data = lines.slice(1).map((line) => {
+          const values = line.split(",").map((v) => v.trim());
+          return headers.reduce((obj, header, i) => {
+            obj[header] = values[i] || "";
+            return obj;
+          }, {} as Record<string, string>);
+        });
+      } else {
+        return toast.error("Please upload a JSON or CSV file");
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return toast.error("File must contain an array of languages");
+      }
+
+      let imported = 0;
+      for (const item of data) {
+        const language: Language = {
+          code: String(item.code || "").trim().toLowerCase(),
+          name: String(item.name || item.nativeName || ""),
+        };
+
+        if (language.code && language.name) {
+          try {
+            await db.upsertLanguage(language);
+            imported++;
+          } catch (error) {
+            console.error(`Failed to import language "${language.name}":`, error);
+          }
+        }
+      }
+
+      toast.success(`Imported ${imported} language(s)`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to import languages");
+    }
+  };
+
   return (
     <AdminLayout>
       <AdminPageHeader
@@ -50,6 +99,8 @@ const LanguagesAdmin = () => {
           setEditing({ ...empty });
         }}
         createLabel="New language"
+        onUpload={handleBulkImport}
+        uploadLabel="Import languages"
       />
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">

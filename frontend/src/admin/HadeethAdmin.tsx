@@ -95,6 +95,64 @@ const HadeethAdmin = () => {
     }
   };
 
+  const handleBulkImport = async (file: File) => {
+    try {
+      let data: any[] = [];
+
+      if (file.name.endsWith(".json")) {
+        const text = await file.text();
+        data = JSON.parse(text);
+      } else if (file.name.endsWith(".csv")) {
+        const text = await file.text();
+        const lines = text.split("\n").filter((line) => line.trim());
+        const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        data = lines.slice(1).map((line) => {
+          const values = line.split(",").map((v) => v.trim());
+          return headers.reduce((obj, header, i) => {
+            obj[header] = values[i] || "";
+            return obj;
+          }, {} as Record<string, string>);
+        });
+      } else {
+        return toast.error("Please upload a JSON or CSV file");
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return toast.error("File must contain an array of hadeeth");
+      }
+
+      let imported = 0;
+      for (const item of data) {
+        const hadeeth: Hadeeth = {
+          id: item.id || "",
+          bookId: String(item.book_id || item.bookId || ""),
+          chapterId: String(item.chapter_id || item.chapterId || ""),
+          referenceNumber: Number(item.refernce_number || item.referenceNumber || 0),
+          reportedBy: String(item.reported_by || item.reportedBy || ""),
+          arabic: String(item.arabic || ""),
+          english: String(item.hadeeth || item.english || ""),
+          grade: (item.grade || "") as "" | "Sahih" | "Hasan" | "Da'if",
+          notes: String(item.notes || ""),
+          langCode: String(item.lang_code || item.langCode || "ta"),
+          isPublished: Boolean(item.is_published ?? item.isPublished ?? true),
+        };
+
+        if ((hadeeth.english.trim() || hadeeth.arabic.trim()) && hadeeth.bookId && hadeeth.chapterId) {
+          try {
+            await db.upsertHadeeth(hadeeth);
+            imported++;
+          } catch (error) {
+            console.error(`Failed to import hadeeth #${hadeeth.referenceNumber}:`, error);
+          }
+        }
+      }
+
+      toast.success(`Imported ${imported} hadeeth`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to import hadeeth");
+    }
+  };
+
   return (
     <AdminLayout>
       <AdminPageHeader
@@ -102,6 +160,8 @@ const HadeethAdmin = () => {
         subtitle="Individual narrations within each chapter."
         onCreate={() => setEditing({ ...empty, bookId: books[0]?.id || "" })}
         createLabel="New hadeeth"
+        onUpload={handleBulkImport}
+        uploadLabel="Import hadeeth"
         search={q}
         onSearch={setQ}
         searchPlaceholder="Search text or narrator…"
