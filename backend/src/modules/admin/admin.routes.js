@@ -207,7 +207,8 @@ router.delete(
 );
 
 // POST /admin/import-json
-// Accepts JSON body and writes it to sample_imports/<filename>.json
+// Accepts JSON body, writes it to sample_imports/<filename>.json and attempts
+// to import contained records into the running mock or database-backed API.
 router.post(
   "/import-json",
   asyncHandler(async (req, res) => {
@@ -221,6 +222,143 @@ router.post(
     await fs.mkdir(outDir, { recursive: true });
     const outPath = path.join(outDir, filename);
     await fs.writeFile(outPath, JSON.stringify(data, null, 2), "utf8");
+
+    // Attempt to import into running backend state
+    try {
+      const env = require("../../config/env");
+
+      // Helper to map created IDs when importing relational data
+      const idMap = { books: new Map(), chapters: new Map() };
+
+      // Import languages
+      if (Array.isArray(data.languages) && data.languages.length) {
+        if (env.useMockApi) {
+          const mock = require("../../mock/store");
+          for (const lang of data.languages) {
+            try {
+              mock.createLanguage({ code: lang.code || String(lang), name: lang.name || lang.code || String(lang) });
+            } catch (e) {
+              // ignore individual failures
+            }
+          }
+        } else {
+          for (const lang of data.languages) {
+            try {
+              await languagesService.createLanguage({
+                code: String(lang.code || "").trim().toLowerCase(),
+                name: String(lang.name || lang.code || "").trim(),
+                nativeName: String(lang.nativeName || lang.name || "").trim(),
+                direction: lang.direction || "ltr"
+              });
+            } catch (e) {}
+          }
+        }
+      }
+
+      // Import books
+      if (Array.isArray(data.books) && data.books.length) {
+        for (const book of data.books) {
+          try {
+            if (env.useMockApi) {
+              const mock = require("../../mock/store");
+              const payload = {
+                slug: book.slug,
+                collectionNumber: book.collectionNumber,
+                author: book.author || "",
+                isPublished: book.is_published ?? book.isPublished ?? true,
+                translations: {
+                  en: { title: book.title || book.name || "", summary: book.summary || book.notes || "" }
+                }
+              };
+              const created = mock.createBook(payload);
+              if (book.id) idMap.books.set(book.id, created.id);
+            } else {
+              const created = await booksService.createBook({
+                title: book.title || book.name || "",
+                author: book.author || "",
+                notes: book.summary || book.notes || null,
+                is_published: book.is_published ?? book.isPublished ?? true,
+                lang_code: book.lang_code || book.langCode || null
+              });
+              if (book.id) idMap.books.set(book.id, created.id);
+            }
+          } catch (e) {
+            // ignore individual failures
+          }
+        }
+      }
+
+      // Import chapters (map book ids)
+      if (Array.isArray(data.chapters) && data.chapters.length) {
+        for (const chapter of data.chapters) {
+          try {
+            const bookId = chapter.bookId || chapter.book_id;
+            const mappedBookId = bookId && idMap.books.has(bookId) ? idMap.books.get(bookId) : bookId;
+
+            if (env.useMockApi) {
+              const mock = require("../../mock/store");
+              const payload = {
+                bookId: mappedBookId || chapter.bookId || chapter.book_id || null,
+                parentId: chapter.parentId || chapter.parent_id || null,
+                chapterNumber: chapter.chapterNumber || chapter.number || null,
+                isPublished: chapter.is_published ?? chapter.isPublished ?? true,
+                translations: { en: { title: chapter.title || "", introduction: chapter.introduction || chapter.content || "" } }
+              };
+              const created = mock.createChapter(payload);
+              if (chapter.id) idMap.chapters.set(chapter.id, created.id);
+            } else {
+              const created = await chaptersService.createChapter({
+                title: chapter.title || "",
+                book_id: mappedBookId || chapter.bookId || chapter.book_id || null,
+                parent_id: chapter.parentId || chapter.parent_id || null,
+                chapterNumber: chapter.chapterNumber || chapter.number || null,
+                is_published: chapter.is_published ?? chapter.isPublished ?? true,
+                notes: chapter.notes || chapter.summary || null,
+                lang_code: chapter.lang_code || chapter.langCode || null
+              });
+              if (chapter.id) idMap.chapters.set(chapter.id, created.id);
+            }
+          } catch (e) {}
+        }
+      }
+
+      // Import hadeeth (map chapter ids)
+      if (Array.isArray(data.hadeeth) && data.hadeeth.length) {
+        for (const item of data.hadeeth) {
+          try {
+            const chapterId = item.chapterId || item.chapter_id;
+            const mappedChapterId = chapterId && idMap.chapters.has(chapterId) ? idMap.chapters.get(chapterId) : chapterId;
+
+            if (env.useMockApi) {
+              const mock = require("../../mock/store");
+              const payload = {
+                chapterId: mappedChapterId || item.chapterId || item.chapter_id || null,
+                hadithNumber: item.hadithNumber || item.number || null,
+                referenceNumber: item.referenceNumber || item.reference || null,
+                reportedBy: item.reportedBy || item.reported_by || "",
+                grade: item.grade || null,
+                isPublished: item.is_published ?? item.isPublished ?? true,
+                translations: { en: { text: item.english || item.hadeeth || item.content || "", notes: item.notes || "" } }
+              };
+              mock.createHadeeth(payload);
+            } else {
+              await hadeethService.createHadeeth({
+                chapter_id: mappedChapterId || item.chapterId || item.chapter_id || null,
+                hadeeth: item.english || item.hadeeth || item.content || "",
+                refernce_number: item.referenceNumber || item.reference || null,
+                reported_by: item.reportedBy || item.reported_by || "",
+                is_published: item.is_published ?? item.isPublished ?? true,
+                notes: item.notes || null,
+                lang_code: item.lang_code || item.langCode || null
+              });
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (err) {
+      // Non-fatal — file was saved; import attempt failed for some entries
+      console.warn("Import attempt failed:", err && err.message);
+    }
 
     return res.status(201).json({ message: "Imported", file: `sample_imports/${filename}` });
   })
