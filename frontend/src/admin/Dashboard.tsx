@@ -1,7 +1,7 @@
 import { AdminLayout } from "./AdminLayout";
 import { AdminPageHeader } from "./AdminUI";
 import { toast } from "sonner";
-import { useDB } from "@/data/store";
+import { useDB, db as api } from "@/data/store";
 import { BookOpenText, ListTree, ScrollText, Languages } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -39,8 +39,8 @@ const Dashboard = () => {
       }
 
       toast.success("File uploaded");
-      // refresh local DB
-      await db.refresh();
+      // refresh local DB using the helper API (avoid colliding with `useDB` state)
+      await api.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     }
