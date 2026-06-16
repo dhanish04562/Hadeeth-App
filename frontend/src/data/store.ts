@@ -212,18 +212,25 @@ function normalize(raw: RawCache): DB {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const API = import.meta.env.VITE_API_URL || "";
-  if (!API) {
-    throw new Error("Missing VITE_API_URL. Set it in your frontend environment.");
-  }
+  // Use `VITE_API_URL` when provided, otherwise default to same origin
+  const API = import.meta.env.VITE_API_URL || (typeof window !== "undefined" ? window.location.origin : "");
 
-  const response = await fetch(`${API}${path}`, {
+  const url = `${API}${path}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers || {}),
     },
     ...init,
-  });
+    });
+  } catch (err) {
+    // Network level errors (DNS, refused connection, CORS preflight failures) surface here
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(message || `Network error when fetching ${url}`);
+  }
 
   if (!response.ok) {
     let message = "Request failed";
