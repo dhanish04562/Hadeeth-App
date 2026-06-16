@@ -1,4 +1,6 @@
 import { AdminLayout } from "./AdminLayout";
+import { AdminPageHeader } from "./AdminUI";
+import { toast } from "sonner";
 import { useDB } from "@/data/store";
 import { BookOpenText, ListTree, ScrollText, Languages } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -15,15 +17,43 @@ const Dashboard = () => {
 
   const recent = [...db.hadeeth].slice(0, 5);
 
+  const handleUpload = async (file: File) => {
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      const API = import.meta.env.VITE_API_URL || "";
+      if (!API) throw new Error("Missing VITE_API_URL in frontend environment");
+
+      const res = await fetch(
+        `${API}/api/admin/import-json?filename=${encodeURIComponent(file.name)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || res.statusText || "Upload failed");
+      }
+
+      toast.success("File uploaded");
+      // refresh local DB
+      await db.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   return (
     <AdminLayout>
-      <div className="mb-10">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-accent">Overview</p>
-        <h1 className="mt-2 font-serif text-4xl text-foreground md:text-5xl">Dashboard</h1>
-        <p className="mt-2 text-muted-foreground">
-          Manage the entire hadeeth library from a single place.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Dashboard"
+        subtitle="Manage the entire hadeeth library from a single place."
+        onUpload={handleUpload}
+        uploadLabel="Import JSON"
+      />
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
