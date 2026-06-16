@@ -5,6 +5,9 @@ const chaptersService = require("../chapters/chapters.service");
 const hadeethService = require("../hadeeth/hadeeth.service");
 const languagesService = require("../languages/languages.service");
 
+const fs = require("fs").promises;
+const path = require("path");
+
 const router = express.Router();
 
 router.get(
@@ -200,6 +203,26 @@ router.delete(
     return removed
       ? res.status(204).send()
       : res.status(404).json({ message: "Language not found." });
+  })
+);
+
+// POST /admin/import-json
+// Accepts JSON body and writes it to sample_imports/<filename>.json
+router.post(
+  "/import-json",
+  asyncHandler(async (req, res) => {
+    const data = req.body;
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({ message: "Empty JSON body" });
+    }
+
+    const filename = (req.query.filename || `upload-${Date.now()}.json`).replace(/[^a-zA-Z0-9-_.]/g, "_");
+    const outDir = path.resolve(process.cwd(), "sample_imports");
+    await fs.mkdir(outDir, { recursive: true });
+    const outPath = path.join(outDir, filename);
+    await fs.writeFile(outPath, JSON.stringify(data, null, 2), "utf8");
+
+    return res.status(201).json({ message: "Imported", file: `sample_imports/${filename}` });
   })
 );
 

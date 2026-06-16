@@ -10,8 +10,9 @@ const app = express();
 const distPath = path.resolve(process.cwd(), "dist");
 const hasClientBuild = fs.existsSync(distPath);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Allow larger JSON payloads for admin import endpoints
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const defaultOrigins = ["http://localhost:8080", "http://localhost:5173"];
 const allowedOrigins = new Set([...defaultOrigins, ...env.allowedOrigins]);
