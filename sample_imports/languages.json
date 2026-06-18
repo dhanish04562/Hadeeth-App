@@ -6,21 +6,9 @@
     "direction": "ltr"
   },
   {
-    "code": "en",
-    "name": "English",
-    "native_name": "English",
-    "direction": "ltr"
-  },
-  {
     "code": "ar",
     "name": "Arabic",
     "native_name": "العربية",
-    "direction": "rtl"
-  },
-  {
-    "code": "ur",
-    "name": "Urdu",
-    "native_name": "اردو",
     "direction": "rtl"
   }
 ]

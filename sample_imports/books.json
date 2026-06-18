@@ -19,14 +19,4 @@
     "lang_code": "ta",
     "is_published": true
   },
-  {
-    "id": "book_03",
-    "title": "சுனன் அத்-திர்மிதி",
-    "author": "முஹம்மது பின் ஈசா அத்-திர்மிதி",
-    "notes": "தமிழ் மொழியில் மொழிபெயர்க்கப்பட்ட திர்மிதி ஹதீஸ் தொகுப்பு",
-    "hadeeth_count": 3956,
-    "era": "9th Century",
-    "lang_code": "ta",
-    "is_published": false
-  }
 ]
