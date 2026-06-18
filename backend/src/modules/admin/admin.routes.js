@@ -169,6 +169,14 @@ router.post(
 );
 
 router.get(
+  "/cleanup-trial-data/preview",
+  asyncHandler(async (req, res) => {
+    const result = await cleanupTrialData.previewTrialDataCleanup(pool);
+    res.json(result);
+  })
+);
+
+router.get(
   "/languages",
   asyncHandler(async (req, res) => {
     const records = await languagesService.listLanguages(req.query);

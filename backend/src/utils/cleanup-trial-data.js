@@ -1,4 +1,3 @@
-const TRIAL_BOOK_IDS = ["book-bukhari", "book-muslim"];
 const TRIAL_CHAPTER_IDS = ["chapter-revelation", "chapter-faith", "chapter-purity"];
 const TRIAL_HADEETH_IDS = [
   "hadith-intentions",
@@ -22,23 +21,21 @@ async function cleanupTrialData(pool) {
     const keepChaptersSql = `
       SELECT c.id
       FROM chapters c
-      LEFT JOIN books b ON b.id = c.book_id
       WHERE
-        c.id = ANY($2::varchar[])
-        OR b.id = ANY($1::varchar[])
-        OR COALESCE(b.title, '') ILIKE '%trial%'
-        OR COALESCE(b.notes, '') ILIKE '%trial%'
+        c.id = ANY($1::varchar[])
+        OR COALESCE(c.notes, '') ILIKE '%trial%'
+        OR COALESCE(c.notes, '') ILIKE '%sample%'
     `;
 
     const deletedHadeeth = await client.query(
       `
         DELETE FROM hadeeth h
         WHERE NOT (
-          h.id = ANY($3::varchar[])
+          h.id = ANY($2::varchar[])
           OR h.chapter_id IN (${keepChaptersSql})
         )
       `,
-      [TRIAL_BOOK_IDS, TRIAL_CHAPTER_IDS, TRIAL_HADEETH_IDS]
+      [TRIAL_CHAPTER_IDS, TRIAL_HADEETH_IDS]
     );
 
     const deletedChapters = await client.query(
@@ -46,7 +43,7 @@ async function cleanupTrialData(pool) {
         DELETE FROM chapters c
         WHERE c.id NOT IN (${keepChaptersSql})
       `,
-      [TRIAL_BOOK_IDS, TRIAL_CHAPTER_IDS]
+      [TRIAL_CHAPTER_IDS]
     );
 
     const { rows: afterRows } = await client.query(`
@@ -73,4 +70,46 @@ async function cleanupTrialData(pool) {
   }
 }
 
+async function previewTrialDataCleanup(pool) {
+  const { rows } = await pool.query(
+    `
+      WITH keep_chapters AS (
+        SELECT c.id
+        FROM chapters c
+        WHERE
+          c.id = ANY($1::varchar[])
+          OR COALESCE(c.notes, '') ILIKE '%trial%'
+          OR COALESCE(c.notes, '') ILIKE '%sample%'
+      )
+      SELECT
+        (SELECT COUNT(*)::int FROM chapters) AS chapters,
+        (SELECT COUNT(*)::int FROM hadeeth) AS hadeeth,
+        (SELECT COUNT(*)::int FROM keep_chapters) AS chapters_to_keep,
+        (
+          SELECT COUNT(*)::int
+          FROM hadeeth h
+          WHERE h.id = ANY($2::varchar[])
+            OR h.chapter_id IN (SELECT id FROM keep_chapters)
+        ) AS hadeeth_to_keep,
+        (
+          SELECT COUNT(*)::int
+          FROM chapters c
+          WHERE c.id NOT IN (SELECT id FROM keep_chapters)
+        ) AS chapters_to_delete,
+        (
+          SELECT COUNT(*)::int
+          FROM hadeeth h
+          WHERE NOT (
+            h.id = ANY($2::varchar[])
+            OR h.chapter_id IN (SELECT id FROM keep_chapters)
+          )
+        ) AS hadeeth_to_delete
+    `,
+    [TRIAL_CHAPTER_IDS, TRIAL_HADEETH_IDS]
+  );
+
+  return rows[0];
+}
+
 module.exports = cleanupTrialData;
+module.exports.previewTrialDataCleanup = previewTrialDataCleanup;
