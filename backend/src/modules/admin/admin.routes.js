@@ -4,6 +4,8 @@ const booksService = require("../books/books.service");
 const chaptersService = require("../chapters/chapters.service");
 const hadeethService = require("../hadeeth/hadeeth.service");
 const languagesService = require("../languages/languages.service");
+const cleanupTrialData = require("../../utils/cleanup-trial-data");
+const pool = require("../../db/pool");
 
 const fs = require("fs").promises;
 const path = require("path");
@@ -155,6 +157,14 @@ router.delete(
     return removed
       ? res.status(204).send()
       : res.status(404).json({ message: "Hadeeth not found." });
+  })
+);
+
+router.post(
+  "/cleanup-trial-data",
+  asyncHandler(async (req, res) => {
+    const result = await cleanupTrialData(pool);
+    res.json(result);
   })
 );
 

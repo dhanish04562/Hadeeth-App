@@ -8,6 +8,7 @@
     "dev:client": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "cleanup:trial-data": "node scripts/cleanup-trial-data.js",
     "start": "node src/server.js"
   },
   "keywords": [
