@@ -1,14 +1,6 @@
-[
-  {
-    "code": "ta",
-    "name": "Tamil",
-    "native_name": "தமிழ்",
-    "direction": "ltr"
-  },
-  {
-    "code": "ar",
-    "name": "Arabic",
-    "native_name": "العربية",
-    "direction": "rtl"
-  }
-]
+[{
+  "code": "ar",
+  "name": "Arabic",
+  "native_name": "العربية",
+  "direction": "rtl"
+}]

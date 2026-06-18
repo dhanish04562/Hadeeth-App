@@ -1,41 +1,41 @@
 [
   {
-    "id": "h_001_001_001",
-    "book_id": "book_01",
-    "chapter_id": "ch_01_01",
+    "id": "hadith-intentions",
+    "book_id": "book-bukhari",
+    "chapter_id": "chapter-revelation",
     "reference_number": 1,
-    "reported_by": "உமர் இப்னு அல்கத்தாப்",
-    "arabic": "عن عمر بن الخطاب رضي الله عنه قال: سمعت رسول الله صلى الله عليه وسلم يقول: الأعمال بالنيات",
-    "english": "உமர் இப்னு அல்கத்தாப் (ரளியல்லாஹু அன்ஹு) அவர்கள் கூறினார்கள்: நான் அல்லாஹ்வின் தூதர் முஹம்மது (ஸல்லல்லாஹு அலைஹி வஸல்லம்) அவர்களிடம் இருந்து கேட்டுக்கொண்டிருந்தேன்: 'நிச்சயமாக, செயல்கள் (அவற்றின் பலாபலங்கள்) நோக்கங்களைப் பொறுத்தது'",
+    "reported_by": "Umar ibn al-Khattab",
+    "arabic": "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ",
+    "english": "Actions are judged by intentions.",
     "grade": "Sahih",
-    "lang_code": "ta",
+    "lang_code": "ar",
     "is_published": true,
-    "notes": "நிய়யத் (நோக்கம்) பற்றிய சிறுவழக்கம்"
+    "notes": "Core hadith about intentions"
   },
   {
-    "id": "h_001_001_002",
-    "book_id": "book_01",
-    "chapter_id": "ch_01_01",
+    "id": "hadith-revelation-bell",
+    "book_id": "book-bukhari",
+    "chapter_id": "chapter-revelation",
     "reference_number": 2,
-    "reported_by": "ஆயிஷா ",
-    "arabic": "عن عائشة رضي الله عنها قالت: أول ما بدئ به رسول الله صلى الله عليه وسلم من الوحي الرؤيا الصالحة",
-    "english": "ஆயிஷா (ரளியல்லாஹு அன்ஹா) அவர்கள் கூறினார்கள்: அல்லாஹ்வின் தூதர் முஹம்மது (ஸல்லல்லாஹு அலைஹி வஸல்லம்) அவர்களுக்கு முதற்பறை வஹி (வேற்றுமை) சுபஸ்வப்ன (நல்ல கனவு) வடிவத்தில் தொடங்கியது",
+    "reported_by": "Aisha",
+    "arabic": "أَوَّلُ مَا بُدِئَ بِهِ رَسُولُ اللَّهِ مِنَ الْوَحْيِ الرُّؤْيَا الصَّالِحَةُ",
+    "english": "The first thing that revelation began with for the Prophet was good dreams.",
     "grade": "Sahih",
-    "lang_code": "ta",
+    "lang_code": "ar",
     "is_published": true,
-    "notes": "வஹி பெறுதல் பற்றிய ஹதீஸ்"
+    "notes": "On the beginning of revelation"
   },
   {
-    "id": "h_001_001_524",
-    "book_id": "book_01",
-    "chapter_id": "ch_01_01",
-    "reference_number": 524,
-    "reported_by": "அபூ ஹுரைரா",
-    "arabic": "عن أبي هريرة رضي الله عنه قال: قال النبي صلى الله عليه وسلم: من ستر مؤمناً ستره الله في الدنيا والآخرة",
-    "english": "அபூ ஹுரைரா (ரளியல்லாஹு அன்ஹு) அவர்கள் கூறினார்கள்: நபி (ஸல்லல்லாஹு அலைஹி வஸல்லம்) அவர்கள் கூறினார்கள்: 'யார் ஒரு முஸ்லிம் சகோதரனை ரகசியமாக வைத்திருந்தால், அல்லாஹ் அவனை இந்த உலகிலும் மறுமையிலும் ரகசியமாக வைத்திருப்பார்'",
+    "id": "hadith-purity-half-faith",
+    "book_id": "book-muslim",
+    "chapter_id": "chapter-purity",
+    "reference_number": 223,
+    "reported_by": "Abu Malik al-Ashari",
+    "arabic": "الطُّهُورُ شَطْرُ الإِيمَانِ",
+    "english": "Purity is half of faith.",
     "grade": "Sahih",
-    "lang_code": "ta",
+    "lang_code": "ar",
     "is_published": true,
-    "notes": "மற்றொரு முஸ்லிமின் குறைகளைப் பற்றி பேசாமல் கண்ணை மூடியுகோல் என்க"
+    "notes": "Short hadith on purity"
   }
 ]

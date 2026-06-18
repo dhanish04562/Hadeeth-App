@@ -1,3 +1,3 @@
 id,title,author,notes,hadeeth_count,era,lang_code,is_published
-book_01,அல்ஹதீஸ் அஸ்ஸஹிஹ் அல்புகாரி,முஹம்மது பின் இஸ்மாயீல் அல்புகாரி,தமிழ் மொழியில் மொழிபெயர்க்கப்பட்ட புகாரி ஹதீஸ் தொகுப்பு,7563,9th Century,ta,true
-book_02,சுனன் அன்-நசாई,முஹம்மது பின் அப்துர்ரஹ்மான் அன்-நசாई,தமிழ் மொழியில் மொழிபெயர்க்கப்பட்ட நசாई ஹதீஸ் தொகுப்பு,5761,9th Century,ta,true
+book-bukhari,Sahih al-Bukhari (Trial),Imam al-Bukhari,Trial collection for client preview,7563,9th Century,ar,true
+book-muslim,Sahih Muslim (Trial),Imam Muslim,Trial collection for client preview,3000,9th Century,ar,true

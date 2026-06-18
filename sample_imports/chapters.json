@@ -1,42 +1,32 @@
 [
   {
-    "id": "ch_01_01",
-    "book_id": "book_01",
+    "id": "chapter-revelation",
+    "book_id": "book-bukhari",
     "parent_id": null,
-    "title": "அல்லாஹ்விடம் அத்தியாயத்தின் சிறப்பு",
-    "hadeeth_count": 45,
-    "lang_code": "ta",
+    "title": "Beginning of Revelation",
+    "hadeeth_count": 2,
+    "lang_code": "ar",
     "is_published": true,
-    "notes": "புகாரி ஹதீஸ்களின் முதல் அத்தியாயம்"
+    "notes": "First chapter sample"
   },
   {
-    "id": "ch_01_02",
-    "book_id": "book_01",
+    "id": "chapter-faith",
+    "book_id": "book-bukhari",
     "parent_id": null,
-    "title": "இறைவாக்கு அல்குரான் கண்டறிதல்",
-    "hadeeth_count": 38,
-    "lang_code": "ta",
+    "title": "Faith",
+    "hadeeth_count": 1,
+    "lang_code": "ar",
     "is_published": true,
-    "notes": "குரான் வல்லுனர்களைப் பற்றிய ஹதீஸ்கள்"
+    "notes": "Sample chapter"
   },
   {
-    "id": "ch_01_03",
-    "book_id": "book_01",
+    "id": "chapter-purity",
+    "book_id": "book-muslim",
     "parent_id": null,
-    "title": "நம்பிக்கைக்கான ஒப்பந்தங்கள்",
-    "hadeeth_count": 52,
-    "lang_code": "ta",
+    "title": "Purity",
+    "hadeeth_count": 1,
+    "lang_code": "ar",
     "is_published": true,
-    "notes": "சாகஹாவாக இருப்பதன் விஷயத்தைக் கீழ்ப்படிதல்"
-  },
-  {
-    "id": "ch_02_01",
-    "book_id": "book_02",
-    "parent_id": null,
-    "title": "பெரிய நம்பிக்கை விதிமுறைகள்",
-    "hadeeth_count": 28,
-    "lang_code": "ta",
-    "is_published": true,
-    "notes": "நசாய்ப் பெரிய ஆறு ஹதீஸ் தொகுப்புக்களில் முதல் ஆறு"
+    "notes": "Sample chapter"
   }
 ]

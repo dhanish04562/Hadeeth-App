@@ -1,22 +1,22 @@
 [
   {
-    "id": "book_01",
-    "title": "அல்ஹதீஸ் அஸ்ஸஹிஹ் அல்புகாரி",
-    "author": "முஹம்மது பின் இஸ்மாயீல் அல்புகாரி",
-    "notes": "தமிழ் மொழியில் மொழிபெயர்க்கப்பட்ட புகாரி ஹதீஸ் தொகுப்பு",
+    "id": "book-bukhari",
+    "title": "Sahih al-Bukhari (Trial)",
+    "author": "Imam al-Bukhari",
+    "notes": "Trial collection for client preview",
     "hadeeth_count": 7563,
     "era": "9th Century",
-    "lang_code": "ta",
+    "lang_code": "ar",
     "is_published": true
   },
   {
-    "id": "book_02",
-    "title": "சுனன் அன்-நசாई",
-    "author": "முஹம்மது பின் அப்துர்ரஹ்மான் அன்-நசாई",
-    "notes": "தமிழ் மொழியில் மொழிபெயர்க்கப்பட்ட நசாई ஹதீஸ் தொகுப்பு",
-    "hadeeth_count": 5761,
+    "id": "book-muslim",
+    "title": "Sahih Muslim (Trial)",
+    "author": "Imam Muslim",
+    "notes": "Trial collection for client preview",
+    "hadeeth_count": 3000,
     "era": "9th Century",
-    "lang_code": "ta",
+    "lang_code": "ar",
     "is_published": true
-  },
+  }
 ]
