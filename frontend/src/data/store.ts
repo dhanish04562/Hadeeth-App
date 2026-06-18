@@ -142,16 +142,32 @@ function normalize(raw: RawCache): DB {
   const chapterBookMap = new Map(
     raw.chapters.map((chapter) => [chapter.id, chapter.book_id || chapter.bookId || ""])
   );
+  const chapterParentMap = new Map(
+    raw.chapters.map((chapter) => [chapter.id, chapter.parent_id ?? chapter.parentId ?? null])
+  );
   const chapterCounts = new Map<string, number>();
   const bookCounts = new Map<string, number>();
 
   for (const item of raw.hadeeth) {
-    chapterCounts.set(item.chapterId, (chapterCounts.get(item.chapterId) || 0) + 1);
-    const bookId = chapterBookMap.get(item.chapterId);
+    const chapterId = item.chapter_id || item.chapterId || "";
+    chapterCounts.set(chapterId, (chapterCounts.get(chapterId) || 0) + 1);
+    const bookId = chapterBookMap.get(chapterId);
     if (bookId) {
       bookCounts.set(bookId, (bookCounts.get(bookId) || 0) + 1);
     }
   }
+
+  for (const chapter of raw.chapters) {
+    const parentId = chapterParentMap.get(chapter.id);
+    if (parentId) {
+      chapterCounts.set(parentId, (chapterCounts.get(parentId) || 0) + (chapterCounts.get(chapter.id) || 0));
+    }
+  }
+
+  const orderFromNotes = (notes?: string, key = "kitab_number") => {
+    const match = String(notes || "").match(new RegExp(`${key}:(\\d+)`));
+    return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+  };
 
   const books = raw.books.map((book) => {
     return {
@@ -177,21 +193,30 @@ function normalize(raw: RawCache): DB {
       isPublished: Boolean(chapter.is_published ?? chapter.isPublished),
       notes: String(chapter.notes || ""),
     };
+  }).sort((a, b) => {
+    const parentCompare = String(a.parentId || "").localeCompare(String(b.parentId || ""));
+    if (parentCompare) return parentCompare;
+    const orderKey = a.parentId ? "chapter_number" : "kitab_number";
+    const orderCompare = orderFromNotes(a.notes, orderKey) - orderFromNotes(b.notes, orderKey);
+    if (orderCompare) return orderCompare;
+    return a.title.localeCompare(b.title);
   });
 
   const hadeeth = raw.hadeeth.map((item) => {
     const text = String(item.hadeeth || "");
+    const langCode = String(item.lang_code || item.langCode || "");
+    const isArabic = langCode.toLowerCase() === "ar";
     return {
       id: item.id,
       bookId: chapterBookMap.get(item.chapter_id || item.chapterId || "") || "",
       chapterId: String(item.chapter_id || item.chapterId || ""),
       referenceNumber: Number(item.refernce_number || item.referenceNumber || 0),
       reportedBy: String(item.reported_by || item.reportedBy || ""),
-      arabic: "",
-      english: text,
+      arabic: isArabic ? text : "",
+      english: isArabic ? "" : text,
       grade: "" as "" | "Sahih" | "Hasan" | "Da'if",
       notes: String(item.notes || ""),
-      langCode: String(item.lang_code || item.langCode || ""),
+      langCode,
       isPublished: Boolean(item.is_published ?? item.isPublished),
     };
   });

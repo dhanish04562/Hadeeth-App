@@ -4,7 +4,7 @@ import { useDB } from "@/data/store";
 import { HadeethCard } from "@/components/HadeethCard";
 import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 
 const BookPage = () => {
   const { id = "" } = useParams();
@@ -13,20 +13,38 @@ const BookPage = () => {
   const chapters = dbState.chapters.filter((c) => c.bookId === id);
   const [activeChapter, setActiveChapter] = useState<string | "all">("all");
   const [q, setQ] = useState("");
+  const kitabs = chapters.filter((chapter) => !chapter.parentId);
+  const babsByKitab = useMemo(() => {
+    return chapters.reduce<Record<string, typeof chapters>>((groups, chapter) => {
+      if (chapter.parentId) {
+        groups[chapter.parentId] = groups[chapter.parentId] || [];
+        groups[chapter.parentId].push(chapter);
+      }
+      return groups;
+    }, {});
+  }, [chapters]);
 
   const list = useMemo(() => {
-    const base =
-      activeChapter === "all"
-        ? dbState.hadeeth.filter((h) => h.bookId === id)
-        : dbState.hadeeth.filter((h) => h.chapterId === activeChapter);
+    let base = dbState.hadeeth.filter((h) => h.bookId === id);
+
+    if (activeChapter !== "all") {
+      const selected = chapters.find((chapter) => chapter.id === activeChapter);
+      const childIds = selected && !selected.parentId
+        ? chapters.filter((chapter) => chapter.parentId === selected.id).map((chapter) => chapter.id)
+        : [];
+      const allowedIds = new Set([activeChapter, ...childIds]);
+      base = base.filter((h) => allowedIds.has(h.chapterId));
+    }
+
     if (!q.trim()) return base;
     const needle = q.toLowerCase();
     return base.filter(
       (h) =>
         h.english.toLowerCase().includes(needle) ||
+        h.arabic.toLowerCase().includes(needle) ||
         h.reportedBy.toLowerCase().includes(needle)
     );
-  }, [id, activeChapter, q, dbState.hadeeth]);
+  }, [id, activeChapter, q, dbState.hadeeth, chapters]);
 
   if (!book && dbState.isLoading) {
     return (
@@ -75,7 +93,7 @@ const BookPage = () => {
             </span>
             <span>
               <span className="font-serif text-2xl text-gradient-gold">{chapters.length}</span>
-              <span className="ml-2 text-primary-foreground/60">chapters</span>
+              <span className="ml-2 text-primary-foreground/60">entries</span>
             </span>
             <span>
               <span className="font-serif text-2xl text-gradient-gold">{book.era}</span>
@@ -87,7 +105,7 @@ const BookPage = () => {
       <div className="container grid gap-10 px-6 py-12 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            Chapters
+            Kitabs
           </p>
           <div className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto pr-2">
             <button
@@ -100,28 +118,54 @@ const BookPage = () => {
             >
               All hadeeth
             </button>
-            {chapters.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setActiveChapter(c.id)}
-                className={`flex items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  activeChapter === c.id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-muted"
-                }`}
-              >
-                <span className="truncate">{c.title}</span>
-                <span
-                  className={`text-[11px] ${
-                    activeChapter === c.id
-                      ? "text-primary-foreground/70"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {c.hadeethCount}
-                </span>
-              </button>
-            ))}
+            {kitabs.map((kitab) => {
+              const babs = babsByKitab[kitab.id] || [];
+              const isKitabActive = activeChapter === kitab.id;
+
+              return (
+                <div key={kitab.id} className="rounded-lg border border-border/60 bg-card/40">
+                  <button
+                    onClick={() => setActiveChapter(kitab.id)}
+                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                      isKitabActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{kitab.title}</span>
+                    <span
+                      className={`text-[11px] ${
+                        isKitabActive
+                          ? "text-primary-foreground/70"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {kitab.hadeethCount}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                  </button>
+
+                  {babs.length > 0 && (
+                    <div className="border-t border-border/60 py-1">
+                      {babs.map((bab) => (
+                        <button
+                          key={bab.id}
+                          onClick={() => setActiveChapter(bab.id)}
+                          className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 pl-6 text-left text-xs transition-colors ${
+                            activeChapter === bab.id
+                              ? "bg-accent/15 text-foreground"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                        >
+                          <span className="min-w-0 flex-1 truncate">{bab.title}</span>
+                          <span>{bab.hadeethCount}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </aside>
 

@@ -6,6 +6,7 @@ const hadeethService = require("../hadeeth/hadeeth.service");
 const languagesService = require("../languages/languages.service");
 const cleanupTrialData = require("../../utils/cleanup-trial-data");
 const pool = require("../../db/pool");
+const { importKitab, isKitabImport } = require("../../utils/import-kitab");
 
 const fs = require("fs").promises;
 const path = require("path");
@@ -168,6 +169,14 @@ router.post(
   })
 );
 
+router.post(
+  "/import-kitab",
+  asyncHandler(async (req, res) => {
+    const result = await importKitab(req.body);
+    res.status(201).json({ message: "Kitab imported", result });
+  })
+);
+
 router.get(
   "/cleanup-trial-data/preview",
   asyncHandler(async (req, res) => {
@@ -240,6 +249,15 @@ router.post(
     await fs.mkdir(outDir, { recursive: true });
     const outPath = path.join(outDir, filename);
     await fs.writeFile(outPath, JSON.stringify(data, null, 2), "utf8");
+
+    if (isKitabImport(data)) {
+      const result = await importKitab(data);
+      return res.status(201).json({
+        message: "Kitab imported",
+        file: `sample_imports/${filename}`,
+        result
+      });
+    }
 
     // Attempt to import into running backend state
     try {
