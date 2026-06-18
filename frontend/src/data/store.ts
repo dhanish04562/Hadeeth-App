@@ -253,11 +253,17 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function loadAll() {
+  const isAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+
+  const booksPath = isAdmin ? "/api/admin/books" : "/api/public/books";
+  const chaptersPath = isAdmin ? "/api/admin/chapters" : "/api/public/chapters";
+  const hadeethPath = isAdmin ? "/api/admin/hadeeth" : "/api/public/hadeeth";
+
   const [languages, books, chapters, hadeeth] = await Promise.all([
     apiFetch<RawLanguage[]>("/api/languages"),
-    apiFetch<RawBook[]>("/api/admin/books"),
-    apiFetch<RawChapter[]>("/api/admin/chapters"),
-    apiFetch<RawHadeeth[]>("/api/admin/hadeeth"),
+    apiFetch<RawBook[]>(booksPath),
+    apiFetch<RawChapter[]>(chaptersPath),
+    apiFetch<RawHadeeth[]>(hadeethPath),
   ]);
 
   rawCache = { languages, books, chapters, hadeeth };
