@@ -32,6 +32,7 @@ const empty: Hadeeth = {
   referenceNumber: 0,
   reportedBy: "",
   arabic: "",
+  tamil: "",
   english: "",
   grade: "Sahih",
   notes: "",
@@ -67,6 +68,7 @@ const HadeethAdmin = () => {
         (bookFilter === "all" || h.bookId === bookFilter) &&
         (!n ||
           h.english.toLowerCase().includes(n) ||
+          h.tamil.toLowerCase().includes(n) ||
           h.arabic.includes(q) ||
           h.reportedBy.toLowerCase().includes(n))
     );
@@ -133,6 +135,7 @@ const HadeethAdmin = () => {
           ),
           reportedBy: String(item.reported_by ?? item.reportedBy ?? ""),
           arabic: String(item.arabic ?? ""),
+          tamil: String(item.tamil ?? ""),
           english: String(item.hadeeth ?? item.english ?? ""),
           grade: (String(item.grade ?? "")) as "" | "Sahih" | "Hasan" | "Da'if",
           notes: String(item.notes ?? ""),
@@ -320,6 +323,13 @@ const HadeethAdmin = () => {
                   className="font-arabic text-lg leading-loose"
                   value={editing.arabic}
                   onChange={(e) => setEditing({ ...editing, arabic: e.target.value })}
+                />
+              </Field>
+              <Field label="Tamil">
+                <Textarea
+                  rows={5}
+                  value={editing.tamil}
+                  onChange={(e) => setEditing({ ...editing, tamil: e.target.value })}
                 />
               </Field>
               <Field label="English">

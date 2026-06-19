@@ -5,6 +5,7 @@
 export type ImportHadith = {
   reference_number: number;
   arabic?: string;
+  tamil?: string;
   english?: string;
   reported_by?: string;
   grade?: string;

@@ -41,6 +41,7 @@ export type Hadeeth = {
   referenceNumber: number;
   reportedBy: string;
   arabic: string;
+  tamil: string;
   english: string;
   grade?: "Sahih" | "Hasan" | "Da'if" | "";
   notes?: string;
@@ -105,6 +106,7 @@ type RawHadeeth = {
   chapterId?: string;
   chapter_id?: string;
   arabic?: string;
+  tamil?: string;
   english?: string;
   grade?: string;
   referenceNumber?: string | number;
@@ -250,6 +252,7 @@ function normalize(raw: RawCache): DB {
     ),
     reportedBy: String(item.reported_by || item.reportedBy || ""),
     arabic: String(item.arabic || ""),
+    tamil: String(item.tamil || ""),
     english: String(item.english || ""),
     grade: String(item.grade || "") as "" | "Sahih" | "Hasan" | "Da'if",
     notes: "",
@@ -459,6 +462,7 @@ export const db = {
       chapter_id: item.chapterId || null,
       reference_number: item.referenceNumber || 0,
       arabic: item.arabic || "",
+      tamil: item.tamil || "",
       english: item.english || "",
       reported_by: item.reportedBy,
       grade: item.grade || "",

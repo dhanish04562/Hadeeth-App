@@ -490,6 +490,7 @@ router.post(
                   item.reference_number ?? item.referenceNumber ?? item.refernce_number ?? 0
                 ),
                 arabic: String(item.arabic ?? ""),
+                tamil: String(item.tamil ?? ""),
                 english: String(item.english ?? item.hadeeth ?? item.content ?? ""),
                 reported_by: item.reportedBy || item.reported_by || "",
                 grade: String(item.grade ?? ""),

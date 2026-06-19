@@ -59,13 +59,20 @@ export function HadeethCard({
 
       <div className="my-6 flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
         <span className="h-px flex-1 bg-border" />
-        <span>Translation</span>
+        <span>Translations</span>
         <span className="h-px flex-1 bg-border" />
       </div>
 
-      <p className={`font-serif text-foreground/90 ${compact ? "text-lg" : "text-xl leading-relaxed md:text-[22px]"}`}>
-        {h.english}
-      </p>
+      {h.tamil && (
+        <p className={`mt-4 font-serif text-foreground/90 ${compact ? "text-lg" : "text-xl leading-relaxed md:text-[22px]"}`}>
+          {h.tamil}
+        </p>
+      )}
+      {h.english && (
+        <p className={`mt-4 font-serif text-foreground/90 ${compact ? "text-lg" : "text-xl leading-relaxed md:text-[22px]"}`}>
+          {h.english}
+        </p>
+      )}
 
       {h.notes && !compact && (
         <p className="mt-4 border-l-2 border-accent/60 bg-accent/5 px-4 py-2 text-sm italic text-muted-foreground">

@@ -80,6 +80,9 @@ function normalizeHadeeth(record, lang) {
     reportedBy: record.reportedBy,
     grade: record.grade,
     isPublished: record.isPublished,
+    arabic: record.translations?.ar?.text || "",
+    tamil: record.tamil || record.translations?.ta?.text || "",
+    english: translation.text || "",
     text: translation.text || "",
     notes: translation.notes || "",
     translations: record.translations
@@ -298,6 +301,7 @@ function createHadeeth(payload) {
     referenceNumber: payload.referenceNumber,
     reportedBy: payload.reportedBy,
     grade: payload.grade,
+    tamil: payload.tamil || "",
     isPublished: Boolean(payload.isPublished),
     translations: prepareTranslations(payload.translations, ["text", "notes"])
   };
@@ -319,6 +323,7 @@ function updateHadeeth(id, payload) {
     referenceNumber: payload.referenceNumber,
     reportedBy: payload.reportedBy,
     grade: payload.grade,
+    tamil: payload.tamil || "",
     isPublished: Boolean(payload.isPublished),
     translations: prepareTranslations(payload.translations, ["text", "notes"])
   });

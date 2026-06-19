@@ -3,7 +3,7 @@ const createId = require("../../utils/create-id");
 const pickDefined = require("../../utils/pick-defined");
 
 const SELECT_FIELDS =
-  "id, chapter_id, reference_number, arabic, english, reported_by, grade, is_published";
+  "id, chapter_id, reference_number, arabic, tamil, english, reported_by, grade, is_published";
 
 async function listHadeeth(filters) {
   const conditions = [];
@@ -64,6 +64,7 @@ async function createHadeeth(payload) {
     chapter_id,
     reference_number,
     arabic,
+    tamil,
     english,
     reported_by,
     grade,
@@ -73,9 +74,9 @@ async function createHadeeth(payload) {
   const { rows } = await pool.query(
     `
       INSERT INTO hadeeth (
-        id, chapter_id, reference_number, arabic, english, reported_by, grade, is_published
+        id, chapter_id, reference_number, arabic, tamil, english, reported_by, grade, is_published
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING ${SELECT_FIELDS}
     `,
     [
@@ -83,6 +84,7 @@ async function createHadeeth(payload) {
       chapter_id || null,
       reference_number ?? null,
       arabic || null,
+      tamil || null,
       english || null,
       reported_by || null,
       grade || null,
@@ -98,6 +100,7 @@ async function updateHadeeth(id, payload) {
     "chapter_id",
     "reference_number",
     "arabic",
+    "tamil",
     "english",
     "reported_by",
     "grade",

@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS hadeeth (
   chapter_id VARCHAR(24),
   reference_number INT,
   arabic TEXT,
+  tamil TEXT,
   english TEXT,
   reported_by VARCHAR(255),
   grade VARCHAR(64),

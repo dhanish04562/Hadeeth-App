@@ -14,6 +14,7 @@ const createHadeethSchema = z.object({
   chapter_id: z.string().length(24).optional(),
   reference_number: z.number().int().optional(),
   arabic: z.string().trim().optional(),
+  tamil: z.string().trim().optional(),
   english: z.string().trim().optional(),
   reported_by: z.string().trim().max(255).optional(),
   grade: z.string().trim().max(64).optional(),
@@ -28,6 +29,7 @@ const updateHadeethSchema = createHadeethSchema.partial().refine(
 const importHadithSchema = z.object({
   reference_number: z.coerce.number().int().positive(),
   arabic: z.string().trim().optional().default(""),
+  tamil: z.string().trim().optional().default(""),
   english: z.string().trim().optional().default(""),
   reported_by: z.string().trim().optional().default(""),
   grade: z.string().trim().optional().default("")

@@ -1,4 +1,4 @@
-id,book_id,chapter_id,reference_number,reported_by,arabic,english,grade,lang_code,is_published,notes
-hadith-intentions,book-bukhari,chapter-revelation,1,Umar ibn al-Khattab,"إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ","Actions are judged by intentions.",Sahih,ar,true,"Core hadith about intentions"
-hadith-revelation-bell,book-bukhari,chapter-revelation,2,Aisha,"أَوَّلُ مَا بُدِئَ بِهِ رَسُولُ اللَّهِ مِنَ الْوَحْيِ الرُّؤْيَا الصَّالِحَةُ","The first thing that revelation began with for the Prophet was good dreams.",Sahih,ar,true,"On the beginning of revelation"
-hadith-purity-half-faith,book-muslim,chapter-purity,223,Abu Malik al-Ashari,"الطُّهُورُ شَطْرُ الإِيمَانِ","Purity is half of faith.",Sahih,ar,true,"Short hadith on purity"
+id,book_id,chapter_id,reference_number,reported_by,arabic,tamil,english,grade,lang_code,is_published,notes
+hadith-intentions,book-bukhari,chapter-revelation,1,Umar ibn al-Khattab,"إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ","அமல்கள் நிய்யத்தின்படியே அமையும்.","Actions are judged by intentions.",Sahih,ar,true,"Core hadith about intentions"
+hadith-revelation-bell,book-bukhari,chapter-revelation,2,Aisha,"أَوَّلُ مَا بُدِئَ بِهِ رَسُولُ اللَّهِ مِنَ الْوَحْيِ الرُّؤْيَا الصَّالِحَةُ","அல்லாஹ்வின் தூதருக்கு வஹ்ய் ஆரம்பமானது நல்ல கனவுகளின் மூலம் ஆகும்.","The first thing that revelation began with for the Prophet was good dreams.",Sahih,ar,true,"On the beginning of revelation"
+hadith-purity-half-faith,book-muslim,chapter-purity,223,Abu Malik al-Ashari,"الطُّهُورُ شَطْرُ الإِيمَانِ","தூய்மை ஈமானின் பாதியாகும்.","Purity is half of faith.",Sahih,ar,true,"Short hadith on purity"

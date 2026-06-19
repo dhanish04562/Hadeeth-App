@@ -69,6 +69,7 @@ async function setupSchema(client) {
       chapter_id VARCHAR(24) REFERENCES chapters(id) ON DELETE CASCADE,
       reference_number INT,
       arabic TEXT,
+      tamil TEXT,
       english TEXT,
       reported_by TEXT,
       grade VARCHAR(64),
@@ -157,14 +158,16 @@ async function importData(client, jsonPath) {
         const hadithId = `hadith-${mi + 1}-${ci + 1}-${hi + 1}`;
         const arabicText = text(hadith.arabic_text);
         const tamilText = text(hadith.tamil_text);
+        const englishText = "";
         const references = text(hadith.references);
 
         await client.query(`
-          INSERT INTO hadeeth (id, chapter_id, reference_number, arabic, english, reported_by, grade, is_published)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+          INSERT INTO hadeeth (id, chapter_id, reference_number, arabic, tamil, english, reported_by, grade, is_published)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
           ON CONFLICT (id) DO UPDATE SET
             chapter_id = EXCLUDED.chapter_id,
             arabic = EXCLUDED.arabic,
+            tamil = EXCLUDED.tamil,
             english = EXCLUDED.english
         `, [
           hadithId,
@@ -172,6 +175,7 @@ async function importData(client, jsonPath) {
           hi + 1,
           arabicText,
           tamilText,
+          englishText,
           references || null,
           null
         ]);

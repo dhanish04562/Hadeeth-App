@@ -201,7 +201,7 @@ async function upsertHadeeth(client, payload) {
       SELECT id
       FROM hadeeth
       WHERE chapter_id = $1
-        AND refernce_number = $2
+        AND reference_number = $2
       LIMIT 1
     `,
     [payload.chapterId, payload.hadithNumber]
@@ -214,18 +214,18 @@ async function upsertHadeeth(client, payload) {
         SET
           chapter_id = $2,
           is_published = true,
-          notes = $3,
-          hadeeth = $4,
-          refernce_number = $5,
+          arabic = $3,
+          tamil = $4,
+          reference_number = $5,
           reported_by = NULL,
-          lang_code = 'ar'
+          grade = NULL
         WHERE id = $1
       `,
       [
         existing.rows[0].id,
         payload.chapterId,
-        payload.notes,
         payload.arabic,
+        payload.tamil || null,
         payload.hadithNumber
       ]
     );
@@ -235,11 +235,11 @@ async function upsertHadeeth(client, payload) {
   await client.query(
     `
       INSERT INTO hadeeth (
-        id, chapter_id, is_published, notes, hadeeth, refernce_number, reported_by, lang_code
+        id, chapter_id, is_published, arabic, tamil, reference_number, reported_by, grade
       )
-      VALUES ($1, $2, true, $3, $4, $5, NULL, 'ar')
+      VALUES ($1, $2, true, $3, $4, $5, NULL, NULL)
     `,
-    [createId(), payload.chapterId, payload.notes, payload.arabic, payload.hadithNumber]
+    [createId(), payload.chapterId, payload.arabic, payload.tamil || null, payload.hadithNumber]
   );
 
   return { created: true };
@@ -312,6 +312,7 @@ async function importKitab(payload) {
           chapterId: bab.id,
           hadithNumber,
           arabic,
+          tamil: text(hadith.tamil),
           notes: chapterNotes
         });
 

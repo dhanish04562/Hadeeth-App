@@ -69,13 +69,20 @@ const HadeethPage = () => {
 
         <div className="my-10 flex items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
           <span className="h-px flex-1 bg-border" />
-          <span>Translation</span>
+          <span>Translations</span>
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <p className="font-serif text-2xl leading-relaxed text-foreground md:text-3xl">
-          {h.english}
-        </p>
+        {h.tamil && (
+          <p className="font-serif text-2xl leading-relaxed text-foreground md:text-3xl">
+            {h.tamil}
+          </p>
+        )}
+        {h.english && (
+          <p className="mt-4 font-serif text-2xl leading-relaxed text-foreground md:text-3xl">
+            {h.english}
+          </p>
+        )}
 
         {h.notes && (
           <div className="mt-10 rounded-2xl border border-accent/30 bg-accent/5 p-6">

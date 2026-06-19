@@ -75,7 +75,7 @@ async function findChapter(client, kitabId, title) {
 async function findHadeeth(client, chapterId, referenceNumber) {
   const { rows } = await client.query(
     `
-      SELECT id, chapter_id, reference_number, arabic, english, reported_by, grade, is_published
+      SELECT id, chapter_id, reference_number, arabic, tamil, english, reported_by, grade, is_published
       FROM hadeeth
       WHERE chapter_id = $1
         AND reference_number = $2
@@ -149,6 +149,7 @@ async function upsertChapter(client, bookId, kitabId, chapterData, stats) {
 async function upsertHadeeth(client, chapterId, hadithData, stats) {
   const referenceNumber = Number(hadithData.reference_number);
   const arabic = text(hadithData.arabic);
+  const tamil = text(hadithData.tamil);
   const english = text(hadithData.english);
   const reportedBy = text(hadithData.reported_by);
   const grade = text(hadithData.grade);
@@ -169,13 +170,14 @@ async function upsertHadeeth(client, chapterId, hadithData, stats) {
         UPDATE hadeeth
         SET
           arabic = $2,
-          english = $3,
-          reported_by = $4,
-          grade = $5,
+          tamil = $3,
+          english = $4,
+          reported_by = $5,
+          grade = $6,
           is_published = true
         WHERE id = $1
       `,
-      [existing.id, arabic || null, english || null, reportedBy || null, grade || null]
+      [existing.id, arabic || null, tamil || null, english || null, reportedBy || null, grade || null]
     );
     stats.duplicates_skipped += 1;
     return existing.id;
@@ -185,11 +187,11 @@ async function upsertHadeeth(client, chapterId, hadithData, stats) {
   await client.query(
     `
       INSERT INTO hadeeth (
-        id, chapter_id, reference_number, arabic, english, reported_by, grade, is_published
+        id, chapter_id, reference_number, arabic, tamil, english, reported_by, grade, is_published
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
     `,
-    [id, chapterId, referenceNumber, arabic || null, english || null, reportedBy || null, grade || null]
+    [id, chapterId, referenceNumber, arabic || null, tamil || null, english || null, reportedBy || null, grade || null]
   );
   stats.hadeeth_created += 1;
   return id;
