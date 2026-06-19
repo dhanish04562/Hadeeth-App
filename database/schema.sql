@@ -58,21 +58,27 @@ CREATE TABLE IF NOT EXISTS chapters (
 CREATE TABLE IF NOT EXISTS hadeeth (
   id VARCHAR(24) PRIMARY KEY,
   chapter_id VARCHAR(24),
-  is_published BOOLEAN DEFAULT FALSE,
-  notes TEXT,
-  hadeeth TEXT,
-  refernce_number INT,
+  reference_number INT,
+  arabic TEXT,
+  english TEXT,
   reported_by VARCHAR(255),
-  lang_code VARCHAR(6),
+  grade VARCHAR(64),
+  is_published BOOLEAN DEFAULT TRUE,
   CONSTRAINT fk_hadeeth_chapter
     FOREIGN KEY (chapter_id)
     REFERENCES chapters(id)
-    ON DELETE CASCADE,
-  CONSTRAINT fk_hadeeth_language
-    FOREIGN KEY (lang_code)
-    REFERENCES languages(code)
-    ON DELETE SET NULL
+    ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_kitabs_book_id ON kitabs(book_id);
 CREATE INDEX IF NOT EXISTS idx_chapters_kitab_id ON chapters(kitab_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hadeeth_chapter_reference
+  ON hadeeth(chapter_id, reference_number)
+  WHERE chapter_id IS NOT NULL AND reference_number IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_kitabs_book_title
+  ON kitabs(book_id, title);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_chapters_kitab_title
+  ON chapters(kitab_id, title);

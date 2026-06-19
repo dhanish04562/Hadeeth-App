@@ -8,6 +8,7 @@ const languagesService = require("../languages/languages.service");
 const cleanupTrialData = require("../../utils/cleanup-trial-data");
 const pool = require("../../db/pool");
 const { importKitab, isKitabImport } = require("../../utils/import-kitab");
+const { importCollection, isCollectionImport } = require("../../utils/import-collection");
 
 const fs = require("fs").promises;
 const path = require("path");
@@ -223,6 +224,17 @@ router.post(
 );
 
 router.post(
+  "/import-collection",
+  asyncHandler(async (req, res) => {
+    const stats = await importCollection(req.body);
+    res.status(201).json({
+      message: "Collection imported",
+      stats
+    });
+  })
+);
+
+router.post(
   "/import-kitab",
   asyncHandler(async (req, res) => {
     const result = await importKitab(req.body);
@@ -302,6 +314,15 @@ router.post(
     await fs.mkdir(outDir, { recursive: true });
     const outPath = path.join(outDir, filename);
     await fs.writeFile(outPath, JSON.stringify(data, null, 2), "utf8");
+
+    if (isCollectionImport(data)) {
+      const stats = await importCollection(data);
+      return res.status(201).json({
+        message: "Collection imported",
+        file: `sample_imports/${filename}`,
+        stats
+      });
+    }
 
     if (isKitabImport(data)) {
       const result = await importKitab(data);
@@ -465,12 +486,14 @@ router.post(
             } else {
               await hadeethService.createHadeeth({
                 chapter_id: mappedChapterId || item.chapterId || item.chapter_id || null,
-                hadeeth: item.english || item.hadeeth || item.content || "",
-                refernce_number: item.referenceNumber || item.reference || null,
+                reference_number: Number(
+                  item.reference_number ?? item.referenceNumber ?? item.refernce_number ?? 0
+                ),
+                arabic: String(item.arabic ?? ""),
+                english: String(item.english ?? item.hadeeth ?? item.content ?? ""),
                 reported_by: item.reportedBy || item.reported_by || "",
-                is_published: item.is_published ?? item.isPublished ?? true,
-                notes: item.notes || null,
-                lang_code: item.lang_code || item.langCode || null
+                grade: String(item.grade ?? ""),
+                is_published: item.is_published ?? item.isPublished ?? true
               });
             }
           } catch (e) {}

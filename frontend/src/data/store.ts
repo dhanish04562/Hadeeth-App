@@ -104,16 +104,16 @@ type RawHadeeth = {
   id: string;
   chapterId?: string;
   chapter_id?: string;
-  hadeeth?: string;
+  arabic?: string;
+  english?: string;
+  grade?: string;
   referenceNumber?: string | number;
+  reference_number?: string | number;
   refernce_number?: string | number;
   reportedBy?: string;
   reported_by?: string;
   isPublished?: boolean;
   is_published?: boolean;
-  notes?: string;
-  langCode?: string;
-  lang_code?: string;
 };
 
 type RawCache = {
@@ -241,24 +241,21 @@ function normalize(raw: RawCache): DB {
       return a.title.localeCompare(b.title);
     });
 
-  const hadeeth = raw.hadeeth.map((item) => {
-    const text = String(item.hadeeth || "");
-    const langCode = String(item.lang_code || item.langCode || "");
-    const isArabic = langCode.toLowerCase() === "ar";
-    return {
-      id: item.id,
-      bookId: chapterBookMap.get(item.chapter_id || item.chapterId || "") || "",
-      chapterId: String(item.chapter_id || item.chapterId || ""),
-      referenceNumber: Number(item.refernce_number || item.referenceNumber || 0),
-      reportedBy: String(item.reported_by || item.reportedBy || ""),
-      arabic: isArabic ? text : "",
-      english: isArabic ? "" : text,
-      grade: "" as "" | "Sahih" | "Hasan" | "Da'if",
-      notes: String(item.notes || ""),
-      langCode,
-      isPublished: Boolean(item.is_published ?? item.isPublished),
-    };
-  });
+  const hadeeth = raw.hadeeth.map((item) => ({
+    id: item.id,
+    bookId: chapterBookMap.get(item.chapter_id || item.chapterId || "") || "",
+    chapterId: String(item.chapter_id || item.chapterId || ""),
+    referenceNumber: Number(
+      item.reference_number ?? item.referenceNumber ?? item.refernce_number ?? 0
+    ),
+    reportedBy: String(item.reported_by || item.reportedBy || ""),
+    arabic: String(item.arabic || ""),
+    english: String(item.english || ""),
+    grade: String(item.grade || "") as "" | "Sahih" | "Hasan" | "Da'if",
+    notes: "",
+    langCode: item.arabic ? "ar" : "en",
+    isPublished: Boolean(item.is_published ?? item.isPublished ?? true),
+  }));
 
   const languages = raw.languages.map((language) => ({
     code: language.code,
@@ -460,12 +457,12 @@ export const db = {
   upsertHadeeth: async (item: Hadeeth) => {
     const payload = {
       chapter_id: item.chapterId || null,
-      hadeeth: item.english || item.arabic || "",
-      refernce_number: item.referenceNumber || 0,
+      reference_number: item.referenceNumber || 0,
+      arabic: item.arabic || "",
+      english: item.english || "",
       reported_by: item.reportedBy,
+      grade: item.grade || "",
       is_published: item.isPublished,
-      notes: item.notes || "",
-      lang_code: item.langCode || null,
     };
 
     if (item.id && rawCache.hadeeth.some((entry) => entry.id === item.id)) {

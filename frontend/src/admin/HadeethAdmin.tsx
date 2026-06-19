@@ -128,7 +128,9 @@ const HadeethAdmin = () => {
           id: (item.id as string) || "",
           bookId: String(item.book_id ?? item.bookId ?? ""),
           chapterId: String(item.chapter_id ?? item.chapterId ?? ""),
-          referenceNumber: Number(item.refernce_number ?? item.referenceNumber ?? 0),
+          referenceNumber: Number(
+            item.reference_number ?? item.referenceNumber ?? item.refernce_number ?? 0
+          ),
           reportedBy: String(item.reported_by ?? item.reportedBy ?? ""),
           arabic: String(item.arabic ?? ""),
           english: String(item.hadeeth ?? item.english ?? ""),

@@ -2,6 +2,7 @@ import { AdminLayout } from "./AdminLayout";
 import { AdminPageHeader } from "./AdminUI";
 import { toast } from "sonner";
 import { useDB, db as api } from "@/data/store";
+import type { ImportCollectionResponse } from "@/data/import";
 import { BookOpenText, ListTree, Library, ScrollText, Languages } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -22,8 +23,7 @@ const Dashboard = () => {
     try {
       const text = await file.text();
       const payload = JSON.parse(text);
-      const API = import.meta.env.VITE_API_URL || "";
-      if (!API) throw new Error("Missing VITE_API_URL in frontend environment");
+      const API = import.meta.env.VITE_API_URL || window.location.origin;
 
       const res = await fetch(
         `${API}/api/admin/import-json?filename=${encodeURIComponent(file.name)}`,
@@ -34,13 +34,26 @@ const Dashboard = () => {
         }
       );
 
+      const body = (await res.json().catch(() => ({}))) as ImportCollectionResponse & {
+        message?: string;
+      };
+
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
         throw new Error(body.message || res.statusText || "Upload failed");
       }
 
-      toast.success("File uploaded");
-      // refresh local DB using the helper API (avoid colliding with `useDB` state)
+      if (body.stats) {
+        const s = body.stats;
+        toast.success(
+          `Imported ${s.kitabs_created} kitab(s), ${s.chapters_created} chapter(s), ${s.hadiths_created} hadith(s)` +
+            (s.duplicates_skipped
+              ? ` · ${s.duplicates_skipped} duplicate(s) updated/skipped`
+              : "")
+        );
+      } else {
+        toast.success(body.message || "File uploaded");
+      }
+
       await api.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
@@ -85,10 +98,11 @@ const Dashboard = () => {
             >
               <div className="min-w-0">
                 <p className="line-clamp-1 font-serif text-base text-foreground">
-                  {h.english}
+                  {h.arabic || h.english}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   #{h.referenceNumber} · {h.reportedBy}
+                  {h.grade ? ` · ${h.grade}` : ""}
                 </p>
               </div>
               <span className="shrink-0 text-xs text-muted-foreground">{h.bookId}</span>

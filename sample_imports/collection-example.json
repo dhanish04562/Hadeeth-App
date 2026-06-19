@@ -1,0 +1,31 @@
+{
+  "book_title": "صحيح مسلم",
+  "kitabs": [
+    {
+      "title": "كتاب الإيمان",
+      "lang_code": "AR",
+      "chapters": [
+        {
+          "title": "باب بيان الإيمان",
+          "lang_code": "AR",
+          "hadiths": [
+            {
+              "reference_number": 1,
+              "arabic": "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ",
+              "english": "",
+              "reported_by": "أبو هريرة",
+              "grade": "صحيح"
+            },
+            {
+              "reference_number": 2,
+              "arabic": "بُنِيَ الْإِسْلَامُ عَلَى خَمْسٍ",
+              "english": "",
+              "reported_by": "ابن عمر",
+              "grade": "صحيح"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

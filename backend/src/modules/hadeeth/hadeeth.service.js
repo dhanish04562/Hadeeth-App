@@ -2,6 +2,9 @@ const pool = require("../../db/pool");
 const createId = require("../../utils/create-id");
 const pickDefined = require("../../utils/pick-defined");
 
+const SELECT_FIELDS =
+  "id, chapter_id, reference_number, arabic, english, reported_by, grade, is_published";
+
 async function listHadeeth(filters) {
   const conditions = [];
   const values = [];
@@ -11,14 +14,9 @@ async function listHadeeth(filters) {
     conditions.push(`chapter_id = $${values.length}`);
   }
 
-  if (filters.lang_code) {
-    values.push(filters.lang_code);
-    conditions.push(`lang_code = $${values.length}`);
-  }
-
-  if (filters.refernce_number !== undefined) {
-    values.push(filters.refernce_number);
-    conditions.push(`refernce_number = $${values.length}`);
+  if (filters.reference_number !== undefined) {
+    values.push(filters.reference_number);
+    conditions.push(`reference_number = $${values.length}`);
   }
 
   if (filters.is_published !== undefined) {
@@ -28,10 +26,10 @@ async function listHadeeth(filters) {
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const query = `
-    SELECT id, chapter_id, is_published, notes, hadeeth, refernce_number, reported_by, lang_code
+    SELECT ${SELECT_FIELDS}
     FROM hadeeth
     ${whereClause}
-    ORDER BY refernce_number ASC NULLS LAST, id ASC
+    ORDER BY reference_number ASC NULLS LAST, id ASC
   `;
 
   const { rows } = await pool.query(query, values);
@@ -40,14 +38,23 @@ async function listHadeeth(filters) {
 
 async function getHadeethById(id) {
   const { rows } = await pool.query(
-    `
-      SELECT id, chapter_id, is_published, notes, hadeeth, refernce_number, reported_by, lang_code
-      FROM hadeeth
-      WHERE id = $1
-    `,
+    `SELECT ${SELECT_FIELDS} FROM hadeeth WHERE id = $1`,
     [id]
   );
+  return rows[0] || null;
+}
 
+async function findHadeethByChapterAndReference(chapterId, referenceNumber) {
+  const { rows } = await pool.query(
+    `
+      SELECT ${SELECT_FIELDS}
+      FROM hadeeth
+      WHERE chapter_id = $1
+        AND reference_number = $2
+      LIMIT 1
+    `,
+    [chapterId, referenceNumber]
+  );
   return rows[0] || null;
 }
 
@@ -55,38 +62,31 @@ async function createHadeeth(payload) {
   const id = createId();
   const {
     chapter_id,
-    is_published,
-    notes,
-    hadeeth,
-    refernce_number,
+    reference_number,
+    arabic,
+    english,
     reported_by,
-    lang_code
+    grade,
+    is_published
   } = payload;
 
   const { rows } = await pool.query(
     `
       INSERT INTO hadeeth (
-        id,
-        chapter_id,
-        is_published,
-        notes,
-        hadeeth,
-        refernce_number,
-        reported_by,
-        lang_code
+        id, chapter_id, reference_number, arabic, english, reported_by, grade, is_published
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id, chapter_id, is_published, notes, hadeeth, refernce_number, reported_by, lang_code
+      RETURNING ${SELECT_FIELDS}
     `,
     [
       id,
       chapter_id || null,
-      is_published ?? false,
-      notes || null,
-      hadeeth || null,
-      refernce_number ?? null,
+      reference_number ?? null,
+      arabic || null,
+      english || null,
       reported_by || null,
-      lang_code || null
+      grade || null,
+      is_published ?? true
     ]
   );
 
@@ -94,8 +94,17 @@ async function createHadeeth(payload) {
 }
 
 async function updateHadeeth(id, payload) {
+  const allowed = [
+    "chapter_id",
+    "reference_number",
+    "arabic",
+    "english",
+    "reported_by",
+    "grade",
+    "is_published"
+  ];
   const updates = pickDefined(payload);
-  const entries = Object.entries(updates);
+  const entries = Object.entries(updates).filter(([key]) => allowed.includes(key));
 
   if (!entries.length) {
     const error = new Error("No fields were provided to update.");
@@ -115,7 +124,7 @@ async function updateHadeeth(id, payload) {
       UPDATE hadeeth
       SET ${setClause}
       WHERE id = $${values.length}
-      RETURNING id, chapter_id, is_published, notes, hadeeth, refernce_number, reported_by, lang_code
+      RETURNING ${SELECT_FIELDS}
     `,
     values
   );
@@ -131,6 +140,7 @@ async function deleteHadeeth(id) {
 module.exports = {
   listHadeeth,
   getHadeethById,
+  findHadeethByChapterAndReference,
   createHadeeth,
   updateHadeeth,
   deleteHadeeth
