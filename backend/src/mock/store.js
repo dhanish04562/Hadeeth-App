@@ -8,6 +8,7 @@ function clone(value) {
 const state = {
   languages: clone(seed.languages),
   books: clone(seed.books),
+  kitabs: clone(seed.kitabs),
   chapters: clone(seed.chapters),
   hadeeth: clone(seed.hadeeth)
 };
@@ -43,12 +44,24 @@ function normalizeBook(record, lang) {
   };
 }
 
+function normalizeKitab(record, lang) {
+  const translation = ensureTranslation(record, lang);
+  return {
+    id: record.id,
+    bookId: record.bookId,
+    kitabNumber: record.kitabNumber,
+    isPublished: record.isPublished,
+    title: translation.title || "",
+    translations: record.translations
+  };
+}
+
 function normalizeChapter(record, lang) {
   const translation = ensureTranslation(record, lang);
   return {
     id: record.id,
     bookId: record.bookId,
-    parentId: record.parentId,
+    kitabId: record.kitabId,
     chapterNumber: record.chapterNumber,
     isPublished: record.isPublished,
     title: translation.title || "",
@@ -89,6 +102,13 @@ function getPublicBook(id, lang) {
   return book ? normalizeBook(book, lang) : null;
 }
 
+function listPublicKitabs(bookId, lang) {
+  return sortByNumber(
+    state.kitabs.filter((item) => item.bookId === bookId && item.isPublished),
+    "kitabNumber"
+  ).map((item) => normalizeKitab(item, lang));
+}
+
 function listPublicChapters(bookId, lang) {
   return sortByNumber(
     state.chapters.filter((item) => item.bookId === bookId && item.isPublished),
@@ -115,6 +135,10 @@ function getPublicHadeeth(id, lang) {
 
 function adminList(resource, parentId) {
   const entries = clone(state[resource]);
+
+  if (resource === "kitabs" && parentId) {
+    return entries.filter((item) => item.bookId === parentId);
+  }
 
   if (resource === "chapters" && parentId) {
     return entries.filter((item) => item.bookId === parentId);
@@ -182,16 +206,56 @@ function deleteBook(id) {
   const chapterIds = state.chapters.filter((item) => item.bookId === id).map((item) => item.id);
   state.hadeeth = state.hadeeth.filter((item) => !chapterIds.includes(item.chapterId));
   state.chapters = state.chapters.filter((item) => item.bookId !== id);
+  state.kitabs = state.kitabs.filter((item) => item.bookId !== id);
   const previousLength = state.books.length;
   state.books = state.books.filter((item) => item.id !== id);
   return state.books.length !== previousLength;
+}
+
+function createKitab(payload) {
+  const record = {
+    id: createId(),
+    bookId: payload.bookId,
+    kitabNumber: Number(payload.kitabNumber) || 1,
+    isPublished: Boolean(payload.isPublished),
+    translations: prepareTranslations(payload.translations, ["title"])
+  };
+
+  state.kitabs.push(record);
+  return clone(record);
+}
+
+function updateKitab(id, payload) {
+  const record = state.kitabs.find((item) => item.id === id);
+
+  if (!record) {
+    return null;
+  }
+
+  Object.assign(record, {
+    bookId: payload.bookId,
+    kitabNumber: Number(payload.kitabNumber) || 1,
+    isPublished: Boolean(payload.isPublished),
+    translations: prepareTranslations(payload.translations, ["title"])
+  });
+
+  return clone(record);
+}
+
+function deleteKitab(id) {
+  const chapterIds = state.chapters.filter((item) => item.kitabId === id).map((item) => item.id);
+  state.hadeeth = state.hadeeth.filter((item) => !chapterIds.includes(item.chapterId));
+  state.chapters = state.chapters.filter((item) => item.kitabId !== id);
+  const previousLength = state.kitabs.length;
+  state.kitabs = state.kitabs.filter((item) => item.id !== id);
+  return state.kitabs.length !== previousLength;
 }
 
 function createChapter(payload) {
   const record = {
     id: createId(),
     bookId: payload.bookId,
-    parentId: payload.parentId || null,
+    kitabId: payload.kitabId || null,
     chapterNumber: Number(payload.chapterNumber) || 1,
     isPublished: Boolean(payload.isPublished),
     translations: prepareTranslations(payload.translations, ["title", "introduction"])
@@ -210,7 +274,7 @@ function updateChapter(id, payload) {
 
   Object.assign(record, {
     bookId: payload.bookId,
-    parentId: payload.parentId || null,
+    kitabId: payload.kitabId || null,
     chapterNumber: Number(payload.chapterNumber) || 1,
     isPublished: Boolean(payload.isPublished),
     translations: prepareTranslations(payload.translations, ["title", "introduction"])
@@ -307,6 +371,7 @@ module.exports = {
   listLanguages,
   listPublicBooks,
   getPublicBook,
+  listPublicKitabs,
   listPublicChapters,
   getPublicChapter,
   listPublicHadeeth,
@@ -316,6 +381,9 @@ module.exports = {
   createBook,
   updateBook,
   deleteBook,
+  createKitab,
+  updateKitab,
+  deleteKitab,
   createChapter,
   updateChapter,
   deleteChapter,

@@ -10,15 +10,16 @@ const BookPage = () => {
   const { id = "" } = useParams();
   const dbState = useDB();
   const book = dbState.books.find((b) => b.id === id);
+  const kitabs = dbState.kitabs.filter((k) => k.bookId === id);
   const chapters = dbState.chapters.filter((c) => c.bookId === id);
   const [activeChapter, setActiveChapter] = useState<string | "all">("all");
   const [q, setQ] = useState("");
-  const kitabs = chapters.filter((chapter) => !chapter.parentId);
-  const babsByKitab = useMemo(() => {
+
+  const chaptersByKitab = useMemo(() => {
     return chapters.reduce<Record<string, typeof chapters>>((groups, chapter) => {
-      if (chapter.parentId) {
-        groups[chapter.parentId] = groups[chapter.parentId] || [];
-        groups[chapter.parentId].push(chapter);
+      if (chapter.kitabId) {
+        groups[chapter.kitabId] = groups[chapter.kitabId] || [];
+        groups[chapter.kitabId].push(chapter);
       }
       return groups;
     }, {});
@@ -28,12 +29,20 @@ const BookPage = () => {
     let base = dbState.hadeeth.filter((h) => h.bookId === id);
 
     if (activeChapter !== "all") {
-      const selected = chapters.find((chapter) => chapter.id === activeChapter);
-      const childIds = selected && !selected.parentId
-        ? chapters.filter((chapter) => chapter.parentId === selected.id).map((chapter) => chapter.id)
-        : [];
-      const allowedIds = new Set([activeChapter, ...childIds]);
-      base = base.filter((h) => allowedIds.has(h.chapterId));
+      const selectedChapter = chapters.find((chapter) => chapter.id === activeChapter);
+      if (selectedChapter) {
+        base = base.filter((h) => h.chapterId === activeChapter);
+      } else {
+        const selectedKitab = kitabs.find((kitab) => kitab.id === activeChapter);
+        if (selectedKitab) {
+          const chapterIds = new Set(
+            chapters
+              .filter((chapter) => chapter.kitabId === selectedKitab.id)
+              .map((chapter) => chapter.id)
+          );
+          base = base.filter((h) => chapterIds.has(h.chapterId));
+        }
+      }
     }
 
     if (!q.trim()) return base;
@@ -44,7 +53,7 @@ const BookPage = () => {
         h.arabic.toLowerCase().includes(needle) ||
         h.reportedBy.toLowerCase().includes(needle)
     );
-  }, [id, activeChapter, q, dbState.hadeeth, chapters]);
+  }, [id, activeChapter, q, dbState.hadeeth, chapters, kitabs]);
 
   if (!book && dbState.isLoading) {
     return (
@@ -92,11 +101,12 @@ const BookPage = () => {
               <span className="ml-2 text-primary-foreground/60">hadeeth</span>
             </span>
             <span>
-              <span className="font-serif text-2xl text-gradient-gold">{chapters.length}</span>
-              <span className="ml-2 text-primary-foreground/60">entries</span>
+              <span className="font-serif text-2xl text-gradient-gold">{kitabs.length}</span>
+              <span className="ml-2 text-primary-foreground/60">kitabs</span>
             </span>
             <span>
-              <span className="font-serif text-2xl text-gradient-gold">{book.era}</span>
+              <span className="font-serif text-2xl text-gradient-gold">{chapters.length}</span>
+              <span className="ml-2 text-primary-foreground/60">chapters</span>
             </span>
           </div>
         </div>
@@ -119,7 +129,7 @@ const BookPage = () => {
               All hadeeth
             </button>
             {kitabs.map((kitab) => {
-              const babs = babsByKitab[kitab.id] || [];
+              const babs = chaptersByKitab[kitab.id] || [];
               const isKitabActive = activeChapter === kitab.id;
 
               return (

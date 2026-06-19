@@ -6,18 +6,20 @@ const chapterIdParamSchema = z.object({
 
 const chapterQuerySchema = z.object({
   book_id: z.string().length(24).optional(),
-  parent_id: z.string().length(24).optional(),
+  kitab_id: z.string().length(24).optional(),
   lang_code: z.string().trim().min(1).max(6).optional(),
   is_published: optionalBoolean
 });
 
 const createChapterSchema = z.object({
   title: z.string().trim().min(1).max(255),
-  parent_id: z.string().length(24).optional(),
+  kitab_id: z.string().length(24).optional(),
   book_id: z.string().length(24).optional(),
   is_published: z.boolean().optional().default(false),
   notes: z.string().trim().optional(),
-  lang_code: z.string().trim().max(6).optional()
+  lang_code: z.string().trim().max(6).optional(),
+  source_key: z.string().trim().optional(),
+  sort_order: z.number().int().optional()
 });
 
 const updateChapterSchema = createChapterSchema.partial().refine(

@@ -50,20 +50,53 @@ const books = [
   }
 ];
 
+const kitabs = [
+  {
+    id: "kitab-revelation",
+    bookId: "book-bukhari",
+    kitabNumber: 1,
+    isPublished: true,
+    translations: {
+      ar: { title: "كتاب بدء الوحي" },
+      ta: { title: "வஹ்யின் ஆரம்பம்" }
+    }
+  },
+  {
+    id: "kitab-faith",
+    bookId: "book-bukhari",
+    kitabNumber: 2,
+    isPublished: true,
+    translations: {
+      ar: { title: "كتاب الإيمان" },
+      ta: { title: "ஈமான்" }
+    }
+  },
+  {
+    id: "kitab-purity",
+    bookId: "book-muslim",
+    kitabNumber: 1,
+    isPublished: true,
+    translations: {
+      ar: { title: "كتاب الطهارة" },
+      ta: { title: "தஹாரத்" }
+    }
+  }
+];
+
 const chapters = [
   {
     id: "chapter-revelation",
     bookId: "book-bukhari",
-    parentId: null,
+    kitabId: "kitab-revelation",
     chapterNumber: 1,
     isPublished: true,
     translations: {
       ar: {
-        title: "بدء الوحي",
+        title: "باب بدء الوحي",
         introduction: "أحاديث تتناول بداية نزول الوحي وصدق النية."
       },
       ta: {
-        title: "வஹ்யின் ஆரம்பம்",
+        title: "வஹ்ய் ஆரம்பம்",
         introduction: "வஹ்ய் ஆரம்பம் மற்றும் நிய்யத்தின் முக்கியத்துவத்தை கூறும் ஹதீஸ்கள்."
       }
     }
@@ -71,16 +104,16 @@ const chapters = [
   {
     id: "chapter-faith",
     bookId: "book-bukhari",
-    parentId: null,
-    chapterNumber: 2,
+    kitabId: "kitab-faith",
+    chapterNumber: 1,
     isPublished: true,
     translations: {
       ar: {
-        title: "الإيمان",
+        title: "باب بيان الإيمان",
         introduction: "باب يجمع نصوصا في تعريف الإيمان وآثاره."
       },
       ta: {
-        title: "ஈமான்",
+        title: "ஈமான் விளக்கம்",
         introduction: "ஈமான் பற்றிய அடிப்படை விளக்கங்களையும் அதன் பலன்களையும் உள்ளடக்கும் அத்தியாயம்."
       }
     }
@@ -88,12 +121,12 @@ const chapters = [
   {
     id: "chapter-purity",
     bookId: "book-muslim",
-    parentId: null,
+    kitabId: "kitab-purity",
     chapterNumber: 1,
     isPublished: true,
     translations: {
       ar: {
-        title: "الطهارة",
+        title: "باب الطهارة",
         introduction: "أحاديث في الطهارة وآداب العبادة."
       },
       ta: {
@@ -186,6 +219,7 @@ const hadeeth = [
 module.exports = {
   languages,
   books,
+  kitabs,
   chapters,
   hadeeth
 };

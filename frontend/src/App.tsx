@@ -12,6 +12,7 @@ import Bookmarks from "./pages/Bookmarks.tsx";
 import AdminLogin from "./admin/AdminLogin.tsx";
 import Dashboard from "./admin/Dashboard.tsx";
 import BooksAdmin from "./admin/BooksAdmin.tsx";
+import KitabsAdmin from "./admin/KitabsAdmin.tsx";
 import ChaptersAdmin from "./admin/ChaptersAdmin.tsx";
 import HadeethAdmin from "./admin/HadeethAdmin.tsx";
 import LanguagesAdmin from "./admin/LanguagesAdmin.tsx";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<Dashboard />} />
             <Route path="/admin/books" element={<BooksAdmin />} />
+            <Route path="/admin/kitabs" element={<KitabsAdmin />} />
             <Route path="/admin/chapters" element={<ChaptersAdmin />} />
             <Route path="/admin/hadeeth" element={<HadeethAdmin />} />
             <Route path="/admin/languages" element={<LanguagesAdmin />} />

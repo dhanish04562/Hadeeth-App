@@ -1,6 +1,7 @@
 const express = require("express");
 const asyncHandler = require("../../middlewares/async-handler");
 const booksService = require("../books/books.service");
+const kitabsService = require("../kitabs/kitabs.service");
 const chaptersService = require("../chapters/chapters.service");
 const hadeethService = require("../hadeeth/hadeeth.service");
 const languagesService = require("../languages/languages.service");
@@ -42,6 +43,65 @@ router.get(
 );
 
 router.get(
+  "/public/kitabs",
+  asyncHandler(async (req, res) => {
+    const kitabs = await kitabsService.listKitabs({
+      lang_code: getLangCode(req.query),
+      is_published: true
+    });
+    res.json(kitabs);
+  })
+);
+
+router.get(
+  "/public/books/:bookId/kitabs",
+  asyncHandler(async (req, res) => {
+    const kitabs = await kitabsService.listKitabs({
+      book_id: req.params.bookId,
+      lang_code: getLangCode(req.query),
+      is_published: true
+    });
+    res.json(kitabs);
+  })
+);
+
+router.get(
+  "/public/kitabs/:kitabId",
+  asyncHandler(async (req, res) => {
+    const kitab = await kitabsService.getKitabById(req.params.kitabId);
+    if (!kitab || !kitab.is_published) {
+      return res.status(404).json({ message: "Kitab not found." });
+    }
+    return res.json(kitab);
+  })
+);
+
+router.get(
+  "/public/kitabs/:kitabId/chapters",
+  asyncHandler(async (req, res) => {
+    const chapters = await chaptersService.listChapters({
+      kitab_id: req.params.kitabId,
+      lang_code: getLangCode(req.query),
+      is_published: true
+    });
+    res.json(chapters);
+  })
+);
+
+router.get(
+  "/public/chapters",
+  asyncHandler(async (req, res) => {
+    const chapters = await chaptersService.listChapters({
+      book_id: req.query.bookId || req.query.book_id,
+      kitab_id: req.query.kitabId || req.query.kitab_id,
+      lang_code: getLangCode(req.query),
+      is_published: true
+    });
+    res.json(chapters);
+  })
+);
+
+router.get(
   "/public/books/:bookId/chapters",
   asyncHandler(async (req, res) => {
     const chapters = await chaptersService.listChapters({
@@ -56,23 +116,29 @@ router.get(
 router.get(
   "/public/books/:bookId/chapters/tree",
   asyncHandler(async (req, res) => {
-    const chapters = await chaptersService.listChapters({
-      book_id: req.params.bookId,
-      lang_code: getLangCode(req.query),
-      is_published: true
-    });
+    const [kitabs, chapters] = await Promise.all([
+      kitabsService.listKitabs({
+        book_id: req.params.bookId,
+        lang_code: getLangCode(req.query),
+        is_published: true
+      }),
+      chaptersService.listChapters({
+        book_id: req.params.bookId,
+        lang_code: getLangCode(req.query),
+        is_published: true
+      })
+    ]);
 
-    // Build tree: top-level chapters (kitab) have parent_id == null
-    const byParent = {};
-    for (const c of chapters) {
-      const pid = c.parent_id || null;
-      if (!byParent[pid]) byParent[pid] = [];
-      byParent[pid].push(c);
+    const chaptersByKitab = {};
+    for (const chapter of chapters) {
+      const kid = chapter.kitab_id || null;
+      if (!chaptersByKitab[kid]) chaptersByKitab[kid] = [];
+      chaptersByKitab[kid].push(chapter);
     }
 
-    const tree = (byParent[null] || []).map((parent) => ({
-      ...parent,
-      children: byParent[parent.id] || []
+    const tree = kitabs.map((kitab) => ({
+      ...kitab,
+      children: chaptersByKitab[kitab.id] || []
     }));
 
     res.json(tree);
@@ -99,18 +165,6 @@ router.get(
       is_published: true
     });
     res.json(hadeeth);
-  })
-);
-
-router.get(
-  "/public/chapters/:chapterId/children",
-  asyncHandler(async (req, res) => {
-    const children = await chaptersService.listChapters({
-      parent_id: req.params.chapterId,
-      lang_code: getLangCode(req.query),
-      is_published: true
-    });
-    res.json(children);
   })
 );
 

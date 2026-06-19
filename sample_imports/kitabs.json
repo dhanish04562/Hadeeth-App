@@ -1,0 +1,26 @@
+[
+  {
+    "id": "kitab-revelation",
+    "book_id": "book-bukhari",
+    "title": "كتاب بدء الوحي",
+    "lang_code": "ar",
+    "is_published": true,
+    "notes": "kitab_number:1"
+  },
+  {
+    "id": "kitab-faith",
+    "book_id": "book-bukhari",
+    "title": "كتاب الإيمان",
+    "lang_code": "ar",
+    "is_published": true,
+    "notes": "kitab_number:2"
+  },
+  {
+    "id": "kitab-purity",
+    "book_id": "book-muslim",
+    "title": "كتاب الطهارة",
+    "lang_code": "ar",
+    "is_published": true,
+    "notes": "kitab_number:1"
+  }
+]

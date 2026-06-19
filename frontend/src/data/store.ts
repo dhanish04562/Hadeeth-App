@@ -13,10 +13,20 @@ export type Book = {
   isPublished: boolean;
 };
 
+export type Kitab = {
+  id: string;
+  bookId: string;
+  title: string;
+  hadeethCount: number;
+  langCode: string;
+  isPublished: boolean;
+  notes?: string;
+};
+
 export type Chapter = {
   id: string;
   bookId: string;
-  parentId?: string | null;
+  kitabId: string;
   title: string;
   hadeethCount: number;
   langCode: string;
@@ -40,6 +50,7 @@ export type Hadeeth = {
 
 type DB = {
   books: Book[];
+  kitabs: Kitab[];
   chapters: Chapter[];
   hadeeth: Hadeeth[];
   languages: Language[];
@@ -63,18 +74,32 @@ type RawBook = {
   lang_code?: string;
 };
 
-type RawChapter = {
+type RawKitab = {
   id: string;
   bookId?: string;
   book_id?: string;
-  parentId?: string | null;
-  parent_id?: string | null;
   title?: string;
   isPublished?: boolean;
   is_published?: boolean;
   notes?: string;
   langCode?: string;
   lang_code?: string;
+  sort_order?: number;
+};
+
+type RawChapter = {
+  id: string;
+  bookId?: string;
+  book_id?: string;
+  kitabId?: string;
+  kitab_id?: string;
+  title?: string;
+  isPublished?: boolean;
+  is_published?: boolean;
+  notes?: string;
+  langCode?: string;
+  lang_code?: string;
+  sort_order?: number;
 };
 
 type RawHadeeth = {
@@ -96,12 +121,14 @@ type RawHadeeth = {
 type RawCache = {
   languages: RawLanguage[];
   books: RawBook[];
+  kitabs: RawKitab[];
   chapters: RawChapter[];
   hadeeth: RawHadeeth[];
 };
 
 const initialState: DB = {
   books: [],
+  kitabs: [],
   chapters: [],
   hadeeth: [],
   languages: [],
@@ -113,6 +140,7 @@ let state: DB = initialState;
 let rawCache: RawCache = {
   languages: [],
   books: [],
+  kitabs: [],
   chapters: [],
   hadeeth: [],
 };
@@ -138,69 +166,82 @@ function getSnapshot() {
   return state;
 }
 
+function orderFromNotes(notes?: string, key = "kitab_number") {
+  const match = String(notes || "").match(new RegExp(`${key}:(\\d+)`));
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+}
+
 function normalize(raw: RawCache): DB {
   const chapterBookMap = new Map(
     raw.chapters.map((chapter) => [chapter.id, chapter.book_id || chapter.bookId || ""])
   );
-  const chapterParentMap = new Map(
-    raw.chapters.map((chapter) => [chapter.id, chapter.parent_id ?? chapter.parentId ?? null])
+  const chapterKitabMap = new Map(
+    raw.chapters.map((chapter) => [chapter.id, chapter.kitab_id || chapter.kitabId || ""])
   );
   const chapterCounts = new Map<string, number>();
+  const kitabCounts = new Map<string, number>();
   const bookCounts = new Map<string, number>();
 
   for (const item of raw.hadeeth) {
     const chapterId = item.chapter_id || item.chapterId || "";
     chapterCounts.set(chapterId, (chapterCounts.get(chapterId) || 0) + 1);
+    const kitabId = chapterKitabMap.get(chapterId);
+    if (kitabId) {
+      kitabCounts.set(kitabId, (kitabCounts.get(kitabId) || 0) + 1);
+    }
     const bookId = chapterBookMap.get(chapterId);
     if (bookId) {
       bookCounts.set(bookId, (bookCounts.get(bookId) || 0) + 1);
     }
   }
 
-  for (const chapter of raw.chapters) {
-    const parentId = chapterParentMap.get(chapter.id);
-    if (parentId) {
-      chapterCounts.set(parentId, (chapterCounts.get(parentId) || 0) + (chapterCounts.get(chapter.id) || 0));
-    }
-  }
+  const books = raw.books.map((book) => ({
+    id: book.id,
+    title: String(book.title || "Untitled collection"),
+    author: String(book.author || ""),
+    notes: String(book.notes || ""),
+    hadeethCount: bookCounts.get(book.id) || 0,
+    era: "",
+    langCode: String(book.lang_code || book.langCode || ""),
+    isPublished: Boolean(book.is_published ?? book.isPublished),
+  }));
 
-  const orderFromNotes = (notes?: string, key = "kitab_number") => {
-    const match = String(notes || "").match(new RegExp(`${key}:(\\d+)`));
-    return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
-  };
+  const kitabs = raw.kitabs
+    .map((kitab) => ({
+      id: kitab.id,
+      bookId: String(kitab.book_id || kitab.bookId || ""),
+      title: String(kitab.title || "Untitled kitab"),
+      hadeethCount: kitabCounts.get(kitab.id) || 0,
+      langCode: String(kitab.lang_code || kitab.langCode || ""),
+      isPublished: Boolean(kitab.is_published ?? kitab.isPublished),
+      notes: String(kitab.notes || ""),
+    }))
+    .sort((a, b) => {
+      const orderCompare =
+        orderFromNotes(a.notes, "kitab_number") - orderFromNotes(b.notes, "kitab_number");
+      if (orderCompare) return orderCompare;
+      return a.title.localeCompare(b.title);
+    });
 
-  const books = raw.books.map((book) => {
-    return {
-      id: book.id,
-      title: String(book.title || "Untitled collection"),
-      author: String(book.author || ""),
-      notes: String(book.notes || ""),
-      hadeethCount: bookCounts.get(book.id) || 0,
-      era: "",
-      langCode: String(book.lang_code || book.langCode || ""),
-      isPublished: Boolean(book.is_published ?? book.isPublished),
-    };
-  });
-
-  const chapters = raw.chapters.map((chapter) => {
-    return {
+  const chapters = raw.chapters
+    .map((chapter) => ({
       id: chapter.id,
       bookId: String(chapter.book_id || chapter.bookId || ""),
-      parentId: chapter.parent_id ?? chapter.parentId ?? null,
+      kitabId: String(chapter.kitab_id || chapter.kitabId || ""),
       title: String(chapter.title || "Untitled chapter"),
       hadeethCount: chapterCounts.get(chapter.id) || 0,
       langCode: String(chapter.lang_code || chapter.langCode || ""),
       isPublished: Boolean(chapter.is_published ?? chapter.isPublished),
       notes: String(chapter.notes || ""),
-    };
-  }).sort((a, b) => {
-    const parentCompare = String(a.parentId || "").localeCompare(String(b.parentId || ""));
-    if (parentCompare) return parentCompare;
-    const orderKey = a.parentId ? "chapter_number" : "kitab_number";
-    const orderCompare = orderFromNotes(a.notes, orderKey) - orderFromNotes(b.notes, orderKey);
-    if (orderCompare) return orderCompare;
-    return a.title.localeCompare(b.title);
-  });
+    }))
+    .sort((a, b) => {
+      const kitabCompare = a.kitabId.localeCompare(b.kitabId);
+      if (kitabCompare) return kitabCompare;
+      const orderCompare =
+        orderFromNotes(a.notes, "chapter_number") - orderFromNotes(b.notes, "chapter_number");
+      if (orderCompare) return orderCompare;
+      return a.title.localeCompare(b.title);
+    });
 
   const hadeeth = raw.hadeeth.map((item) => {
     const text = String(item.hadeeth || "");
@@ -228,6 +269,7 @@ function normalize(raw: RawCache): DB {
 
   return {
     books,
+    kitabs,
     chapters,
     hadeeth,
     languages,
@@ -237,36 +279,31 @@ function normalize(raw: RawCache): DB {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  // Use `VITE_API_URL` when provided, otherwise default to same origin
   const API = import.meta.env.VITE_API_URL || (typeof window !== "undefined" ? window.location.origin : "");
-
   const url = `${API}${path}`;
 
   let response: Response;
   try {
     response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers || {}),
-    },
-    ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers || {}),
+      },
+      ...init,
     });
   } catch (err) {
-    // Network level errors (DNS, refused connection, CORS preflight failures) surface here
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(message || `Network error when fetching ${url}`);
   }
 
   if (!response.ok) {
     let message = "Request failed";
-
     try {
       const body = await response.json();
       message = body.message || message;
     } catch {
       message = response.statusText || message;
     }
-
     throw new Error(message);
   }
 
@@ -281,17 +318,19 @@ async function loadAll() {
   const isAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
 
   const booksPath = isAdmin ? "/api/admin/books" : "/api/public/books";
+  const kitabsPath = isAdmin ? "/api/admin/kitabs" : "/api/public/kitabs";
   const chaptersPath = isAdmin ? "/api/admin/chapters" : "/api/public/chapters";
   const hadeethPath = isAdmin ? "/api/admin/hadeeth" : "/api/public/hadeeth";
 
-  const [languages, books, chapters, hadeeth] = await Promise.all([
+  const [languages, books, kitabs, chapters, hadeeth] = await Promise.all([
     apiFetch<RawLanguage[]>("/api/languages"),
     apiFetch<RawBook[]>(booksPath),
+    apiFetch<RawKitab[]>(kitabsPath),
     apiFetch<RawChapter[]>(chaptersPath),
     apiFetch<RawHadeeth[]>(hadeethPath),
   ]);
 
-  rawCache = { languages, books, chapters, hadeeth };
+  rawCache = { languages, books, kitabs, chapters, hadeeth };
   setState(() => normalize(rawCache));
 }
 
@@ -329,7 +368,10 @@ export function useDB(): DB {
 export const db = {
   getAll: () => state,
   getBook: (id: string) => state.books.find((book) => book.id === id),
+  getKitabsByBook: (bookId: string) => state.kitabs.filter((kitab) => kitab.bookId === bookId),
+  getKitab: (id: string) => state.kitabs.find((kitab) => kitab.id === id),
   getChaptersByBook: (bookId: string) => state.chapters.filter((chapter) => chapter.bookId === bookId),
+  getChaptersByKitab: (kitabId: string) => state.chapters.filter((chapter) => chapter.kitabId === kitabId),
   getHadeethByBook: (bookId: string) => state.hadeeth.filter((item) => item.bookId === bookId),
   getHadeethByChapter: (chapterId: string) => state.hadeeth.filter((item) => item.chapterId === chapterId),
   getHadeethById: (id: string) => state.hadeeth.find((item) => item.id === id),
@@ -362,11 +404,38 @@ export const db = {
     await apiFetch(`/api/admin/books/${id}`, { method: "DELETE" });
     await loadAll();
   },
+  upsertKitab: async (kitab: Kitab) => {
+    const payload = {
+      title: kitab.title,
+      book_id: kitab.bookId || null,
+      is_published: kitab.isPublished,
+      notes: kitab.notes || "",
+      lang_code: kitab.langCode || null,
+    };
+
+    if (kitab.id && rawCache.kitabs.some((item) => item.id === kitab.id)) {
+      await apiFetch(`/api/admin/kitabs/${kitab.id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await apiFetch("/api/admin/kitabs", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    }
+
+    await loadAll();
+  },
+  deleteKitab: async (id: string) => {
+    await apiFetch(`/api/admin/kitabs/${id}`, { method: "DELETE" });
+    await loadAll();
+  },
   upsertChapter: async (chapter: Chapter) => {
     const payload = {
       title: chapter.title,
       book_id: chapter.bookId || null,
-      parent_id: chapter.parentId || null,
+      kitab_id: chapter.kitabId || null,
       is_published: chapter.isPublished,
       notes: chapter.notes || "",
       lang_code: chapter.langCode || null,

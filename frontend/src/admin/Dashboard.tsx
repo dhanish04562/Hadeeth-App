@@ -2,7 +2,7 @@ import { AdminLayout } from "./AdminLayout";
 import { AdminPageHeader } from "./AdminUI";
 import { toast } from "sonner";
 import { useDB, db as api } from "@/data/store";
-import { BookOpenText, ListTree, ScrollText, Languages } from "lucide-react";
+import { BookOpenText, ListTree, Library, ScrollText, Languages } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
@@ -10,6 +10,7 @@ const Dashboard = () => {
 
   const stats = [
     { label: "Books", value: db.books.length, icon: BookOpenText, to: "/admin/books" },
+    { label: "Kitabs", value: db.kitabs.length, icon: Library, to: "/admin/kitabs" },
     { label: "Chapters", value: db.chapters.length, icon: ListTree, to: "/admin/chapters" },
     { label: "Hadeeth", value: db.hadeeth.length, icon: ScrollText, to: "/admin/hadeeth" },
     { label: "Languages", value: db.languages.length, icon: Languages, to: "/admin/languages" },
@@ -55,7 +56,7 @@ const Dashboard = () => {
         uploadLabel="Import JSON"
       />
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((s) => (
           <Link
             key={s.label}

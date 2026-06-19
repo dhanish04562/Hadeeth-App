@@ -2,31 +2,28 @@
   {
     "id": "chapter-revelation",
     "book_id": "book-bukhari",
-    "parent_id": null,
-    "title": "Beginning of Revelation",
-    "hadeeth_count": 2,
+    "kitab_id": "kitab-revelation",
+    "title": "باب بدء الوحي",
     "lang_code": "ar",
     "is_published": true,
-    "notes": "First chapter sample"
+    "notes": "kitab_number:1;chapter_number:1"
   },
   {
     "id": "chapter-faith",
     "book_id": "book-bukhari",
-    "parent_id": null,
-    "title": "Faith",
-    "hadeeth_count": 1,
+    "kitab_id": "kitab-faith",
+    "title": "باب بيان الإيمان",
     "lang_code": "ar",
     "is_published": true,
-    "notes": "Sample chapter"
+    "notes": "kitab_number:2;chapter_number:1"
   },
   {
     "id": "chapter-purity",
     "book_id": "book-muslim",
-    "parent_id": null,
-    "title": "Purity",
-    "hadeeth_count": 1,
+    "kitab_id": "kitab-purity",
+    "title": "باب الطهارة",
     "lang_code": "ar",
     "is_published": true,
-    "notes": "Sample chapter"
+    "notes": "kitab_number:1;chapter_number:1"
   }
 ]

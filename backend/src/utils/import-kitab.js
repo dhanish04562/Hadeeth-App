@@ -48,12 +48,18 @@ function assertKitabPayload(payload) {
 async function ensureImportSchema(client) {
   await client.query(`
     ALTER TABLE books ADD COLUMN IF NOT EXISTS source_key TEXT;
+    ALTER TABLE kitabs ADD COLUMN IF NOT EXISTS source_key TEXT;
+    ALTER TABLE kitabs ADD COLUMN IF NOT EXISTS sort_order INTEGER;
     ALTER TABLE chapters ADD COLUMN IF NOT EXISTS source_key TEXT;
     ALTER TABLE chapters ADD COLUMN IF NOT EXISTS sort_order INTEGER;
     ALTER TABLE hadeeth ADD COLUMN IF NOT EXISTS source_key TEXT;
 
     CREATE UNIQUE INDEX IF NOT EXISTS ux_books_source_key
       ON books(source_key)
+      WHERE source_key IS NOT NULL;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_kitabs_source_key
+      ON kitabs(source_key)
       WHERE source_key IS NOT NULL;
 
     CREATE UNIQUE INDEX IF NOT EXISTS ux_chapters_source_key
@@ -64,8 +70,8 @@ async function ensureImportSchema(client) {
       ON hadeeth(source_key)
       WHERE source_key IS NOT NULL;
 
-    CREATE INDEX IF NOT EXISTS ix_chapters_book_parent_sort
-      ON chapters(book_id, parent_id, sort_order, title);
+    CREATE INDEX IF NOT EXISTS ix_chapters_kitab_sort
+      ON chapters(kitab_id, sort_order, title);
 
     CREATE INDEX IF NOT EXISTS ix_hadeeth_chapter_reference
       ON hadeeth(chapter_id, refernce_number);
@@ -130,6 +136,52 @@ async function upsertCollection(client, payload) {
   return rows[0].id;
 }
 
+async function upsertKitab(client, payload) {
+  const existing = await client.query(
+    "SELECT id FROM kitabs WHERE source_key = $1 LIMIT 1",
+    [payload.sourceKey]
+  );
+
+  if (existing.rows[0]) {
+    const { rows } = await client.query(
+      `
+        UPDATE kitabs
+        SET
+          title = $2,
+          book_id = $3,
+          is_published = true,
+          notes = $4,
+          lang_code = 'ar',
+          sort_order = $5
+        WHERE id = $1
+        RETURNING id
+      `,
+      [
+        existing.rows[0].id,
+        payload.title,
+        payload.bookId,
+        payload.notes,
+        payload.sortOrder
+      ]
+    );
+    return { id: rows[0].id, created: false };
+  }
+
+  const id = createId();
+  const { rows } = await client.query(
+    `
+      INSERT INTO kitabs (
+        id, title, book_id, is_published, notes, lang_code, source_key, sort_order
+      )
+      VALUES ($1, $2, $3, true, $4, 'ar', $5, $6)
+      RETURNING id
+    `,
+    [id, payload.title, payload.bookId, payload.notes, payload.sourceKey, payload.sortOrder]
+  );
+
+  return { id: rows[0].id, created: true };
+}
+
 async function upsertChapter(client, payload) {
   const existing = await client.query(
     "SELECT id FROM chapters WHERE source_key = $1 LIMIT 1",
@@ -142,7 +194,7 @@ async function upsertChapter(client, payload) {
         UPDATE chapters
         SET
           title = $2,
-          parent_id = $3,
+          kitab_id = $3,
           book_id = $4,
           is_published = true,
           notes = $5,
@@ -154,10 +206,10 @@ async function upsertChapter(client, payload) {
       [
         existing.rows[0].id,
         payload.title,
-        payload.parentId,
+        payload.kitabId,
         payload.bookId,
         payload.notes,
-        payload.sortOrder,
+        payload.sortOrder
       ]
     );
     return { id: rows[0].id, created: false };
@@ -167,12 +219,12 @@ async function upsertChapter(client, payload) {
   const { rows } = await client.query(
     `
       INSERT INTO chapters (
-        id, title, parent_id, book_id, is_published, notes, lang_code, source_key, sort_order
+        id, title, kitab_id, book_id, is_published, notes, lang_code, source_key, sort_order
       )
       VALUES ($1, $2, $3, $4, true, $5, 'ar', $6, $7)
       RETURNING id
     `,
-    [id, payload.title, payload.parentId, payload.bookId, payload.notes, payload.sourceKey, payload.sortOrder]
+    [id, payload.title, payload.kitabId, payload.bookId, payload.notes, payload.sourceKey, payload.sortOrder]
   );
 
   return { id: rows[0].id, created: true };
@@ -203,7 +255,7 @@ async function upsertHadeeth(client, payload) {
         payload.chapterId,
         payload.notes,
         payload.arabic,
-        payload.hadithNumber,
+        payload.hadithNumber
       ]
     );
     return { created: false };
@@ -230,7 +282,7 @@ async function importKitab(payload) {
     collection: null,
     kitab: null,
     chapters: { created: 0, updated: 0 },
-    hadeeth: { created: 0, updated: 0 },
+    hadeeth: { created: 0, updated: 0 }
   };
 
   try {
@@ -243,13 +295,12 @@ async function importKitab(payload) {
     const bookNumber = requirePositiveInt(payload.book_number, "book_number");
     const kitabSourceKey = `${collectionKey}:kitab:${numberKey(bookNumber)}`;
 
-    const kitab = await upsertChapter(client, {
+    const kitab = await upsertKitab(client, {
       sourceKey: kitabSourceKey,
       title: text(payload.book_name_ar),
-      parentId: null,
       bookId: collectionId,
       notes: `kitab_number:${bookNumber}`,
-      sortOrder: bookNumber,
+      sortOrder: bookNumber
     });
 
     summary.collection = collectionId;
@@ -266,14 +317,14 @@ async function importKitab(payload) {
         throw error;
       }
 
-      const babSourceKey = `${collectionKey}:kitab:${numberKey(bookNumber)}:chapter:${numberKey(chapterNumber)}`;
+      const chapterSourceKey = `${collectionKey}:kitab:${numberKey(bookNumber)}:chapter:${numberKey(chapterNumber)}`;
       const bab = await upsertChapter(client, {
-        sourceKey: babSourceKey,
+        sourceKey: chapterSourceKey,
         title: chapterTitle,
-        parentId: kitab.id,
+        kitabId: kitab.id,
         bookId: collectionId,
         notes: `kitab_number:${bookNumber};chapter_number:${chapterNumber}`,
-        sortOrder: chapterNumber,
+        sortOrder: chapterNumber
       });
 
       if (bab.created) summary.chapters.created += 1;
@@ -298,7 +349,7 @@ async function importKitab(payload) {
           chapterId: bab.id,
           hadithNumber,
           arabic,
-          notes: `kitab_number:${bookNumber};chapter_number:${chapterNumber}`,
+          notes: `kitab_number:${bookNumber};chapter_number:${chapterNumber}`
         });
 
         if (result.created) summary.hadeeth.created += 1;
@@ -329,5 +380,5 @@ function isKitabImport(payload) {
 
 module.exports = {
   importKitab,
-  isKitabImport,
+  isKitabImport
 };

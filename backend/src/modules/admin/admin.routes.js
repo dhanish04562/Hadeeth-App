@@ -1,6 +1,7 @@
 const express = require("express");
 const asyncHandler = require("../../middlewares/async-handler");
 const booksService = require("../books/books.service");
+const kitabsService = require("../kitabs/kitabs.service");
 const chaptersService = require("../chapters/chapters.service");
 const hadeethService = require("../hadeeth/hadeeth.service");
 const languagesService = require("../languages/languages.service");
@@ -60,11 +61,63 @@ router.delete(
 );
 
 router.get(
+  "/kitabs",
+  asyncHandler(async (req, res) => {
+    const records = await kitabsService.listKitabs({
+      ...req.query,
+      book_id: req.query.bookId || req.query.book_id
+    });
+    res.json(records);
+  })
+);
+
+router.post(
+  "/kitabs",
+  asyncHandler(async (req, res) => {
+    const record = await kitabsService.createKitab(req.body);
+    res.status(201).json(record);
+  })
+);
+
+router.get(
+  "/kitabs/:id",
+  asyncHandler(async (req, res) => {
+    const record = await kitabsService.getKitabById(req.params.id);
+    if (!record) {
+      return res.status(404).json({ message: "Kitab not found." });
+    }
+    return res.json(record);
+  })
+);
+
+async function updateKitab(req, res) {
+  const record = await kitabsService.updateKitab(req.params.id, req.body);
+  if (!record) {
+    return res.status(404).json({ message: "Kitab not found." });
+  }
+  return res.json(record);
+}
+
+router.patch("/kitabs/:id", asyncHandler(updateKitab));
+router.put("/kitabs/:id", asyncHandler(updateKitab));
+
+router.delete(
+  "/kitabs/:id",
+  asyncHandler(async (req, res) => {
+    const removed = await kitabsService.deleteKitab(req.params.id);
+    return removed
+      ? res.status(204).send()
+      : res.status(404).json({ message: "Kitab not found." });
+  })
+);
+
+router.get(
   "/chapters",
   asyncHandler(async (req, res) => {
     const records = await chaptersService.listChapters({
       ...req.query,
-      book_id: req.query.bookId || req.query.book_id
+      book_id: req.query.bookId || req.query.book_id,
+      kitab_id: req.query.kitabId || req.query.kitab_id
     });
     res.json(records);
   })
@@ -264,7 +317,7 @@ router.post(
       const env = require("../../config/env");
 
       // Helper to map created IDs when importing relational data
-      const idMap = { books: new Map(), chapters: new Map() };
+      const idMap = { books: new Map(), kitabs: new Map(), chapters: new Map() };
 
       // Import languages
       if (Array.isArray(data.languages) && data.languages.length) {
@@ -324,18 +377,51 @@ router.post(
         }
       }
 
-      // Import chapters (map book ids)
+      // Import kitabs (map book ids)
+      if (Array.isArray(data.kitabs) && data.kitabs.length) {
+        for (const kitab of data.kitabs) {
+          try {
+            const bookId = kitab.bookId || kitab.book_id;
+            const mappedBookId = bookId && idMap.books.has(bookId) ? idMap.books.get(bookId) : bookId;
+
+            if (env.useMockApi) {
+              const mock = require("../../mock/store");
+              const created = mock.createKitab({
+                bookId: mappedBookId || kitab.bookId || kitab.book_id || null,
+                isPublished: kitab.is_published ?? kitab.isPublished ?? true,
+                translations: { en: { title: kitab.title || "" } },
+                notes: kitab.notes || "",
+                langCode: kitab.lang_code || kitab.langCode || null
+              });
+              if (kitab.id) idMap.kitabs.set(kitab.id, created.id);
+            } else {
+              const created = await kitabsService.createKitab({
+                title: kitab.title || "",
+                book_id: mappedBookId || kitab.bookId || kitab.book_id || null,
+                is_published: kitab.is_published ?? kitab.isPublished ?? true,
+                notes: kitab.notes || kitab.summary || null,
+                lang_code: kitab.lang_code || kitab.langCode || null
+              });
+              if (kitab.id) idMap.kitabs.set(kitab.id, created.id);
+            }
+          } catch (e) {}
+        }
+      }
+
+      // Import chapters (map book and kitab ids)
       if (Array.isArray(data.chapters) && data.chapters.length) {
         for (const chapter of data.chapters) {
           try {
             const bookId = chapter.bookId || chapter.book_id;
             const mappedBookId = bookId && idMap.books.has(bookId) ? idMap.books.get(bookId) : bookId;
+            const kitabId = chapter.kitabId || chapter.kitab_id;
+            const mappedKitabId = kitabId && idMap.kitabs.has(kitabId) ? idMap.kitabs.get(kitabId) : kitabId;
 
             if (env.useMockApi) {
               const mock = require("../../mock/store");
               const payload = {
                 bookId: mappedBookId || chapter.bookId || chapter.book_id || null,
-                parentId: chapter.parentId || chapter.parent_id || null,
+                kitabId: mappedKitabId || chapter.kitabId || chapter.kitab_id || null,
                 chapterNumber: chapter.chapterNumber || chapter.number || null,
                 isPublished: chapter.is_published ?? chapter.isPublished ?? true,
                 translations: { en: { title: chapter.title || "", introduction: chapter.introduction || chapter.content || "" } }
@@ -346,8 +432,7 @@ router.post(
               const created = await chaptersService.createChapter({
                 title: chapter.title || "",
                 book_id: mappedBookId || chapter.bookId || chapter.book_id || null,
-                parent_id: chapter.parentId || chapter.parent_id || null,
-                chapterNumber: chapter.chapterNumber || chapter.number || null,
+                kitab_id: mappedKitabId || chapter.kitabId || chapter.kitab_id || null,
                 is_published: chapter.is_published ?? chapter.isPublished ?? true,
                 notes: chapter.notes || chapter.summary || null,
                 lang_code: chapter.lang_code || chapter.langCode || null

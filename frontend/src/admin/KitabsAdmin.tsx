@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { AdminLayout } from "./AdminLayout";
 import { AdminPageHeader, EmptyState, useConfirm } from "./AdminUI";
-import { Chapter, db, useDB } from "@/data/store";
+import { Kitab, db, useDB } from "@/data/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,10 +24,9 @@ import {
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-const empty: Chapter = {
+const empty: Kitab = {
   id: "",
   bookId: "",
-  kitabId: "",
   title: "",
   hadeethCount: 0,
   langCode: "ta",
@@ -35,40 +34,34 @@ const empty: Chapter = {
   notes: "",
 };
 
-const ChaptersAdmin = () => {
-  const { chapters, books, kitabs, languages } = useDB();
+const KitabsAdmin = () => {
+  const { kitabs, books, languages } = useDB();
   const [q, setQ] = useState("");
   const [bookFilter, setBookFilter] = useState<string>("all");
-  const [editing, setEditing] = useState<Chapter | null>(null);
+  const [editing, setEditing] = useState<Kitab | null>(null);
   const [saving, setSaving] = useState(false);
   const { ask, dialog } = useConfirm();
 
   const filtered = useMemo(() => {
     const n = q.toLowerCase();
-    return chapters.filter(
-      (c) =>
-        (bookFilter === "all" || c.bookId === bookFilter) &&
-        (!n || c.title.toLowerCase().includes(n))
+    return kitabs.filter(
+      (k) =>
+        (bookFilter === "all" || k.bookId === bookFilter) &&
+        (!n || k.title.toLowerCase().includes(n))
     );
-  }, [chapters, q, bookFilter]);
-
-  const kitabsForBook = useMemo(() => {
-    if (!editing?.bookId) return [];
-    return kitabs.filter((k) => k.bookId === editing.bookId);
-  }, [kitabs, editing?.bookId]);
+  }, [kitabs, q, bookFilter]);
 
   const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) return toast.error("Title is required");
     if (!editing.bookId) return toast.error("Choose a parent book");
-    if (!editing.kitabId) return toast.error("Choose a kitab");
     try {
       setSaving(true);
-      await db.upsertChapter(editing);
-      toast.success("Chapter saved");
+      await db.upsertKitab(editing);
+      toast.success("Kitab saved");
       setEditing(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save chapter");
+      toast.error(error instanceof Error ? error.message : "Unable to save kitab");
     } finally {
       setSaving(false);
     }
@@ -97,16 +90,15 @@ const ChaptersAdmin = () => {
       }
 
       if (!Array.isArray(data) || data.length === 0) {
-        return toast.error("File must contain an array of chapters");
+        return toast.error("File must contain an array of kitabs");
       }
 
       let imported = 0;
       for (const item of data) {
         const raw = item as Record<string, unknown>;
-        const chapter: Chapter = {
+        const kitab: Kitab = {
           id: String(raw.id ?? ""),
           bookId: String(raw.book_id ?? raw.bookId ?? ""),
-          kitabId: String(raw.kitab_id ?? raw.kitabId ?? ""),
           title: String(raw.title ?? ""),
           hadeethCount: Number(raw.hadeeth_count ?? raw.hadeethCount ?? 0),
           langCode: String(raw.lang_code ?? raw.langCode ?? "ta"),
@@ -114,40 +106,36 @@ const ChaptersAdmin = () => {
           notes: String(raw.notes ?? ""),
         };
 
-        if (chapter.title.trim() && chapter.bookId && chapter.kitabId) {
+        if (kitab.title.trim() && kitab.bookId) {
           try {
-            await db.upsertChapter(chapter);
+            await db.upsertKitab(kitab);
             imported++;
           } catch (error) {
-            console.error(`Failed to import chapter "${chapter.title}":`, error);
+            console.error(`Failed to import kitab "${kitab.title}":`, error);
           }
         }
       }
 
-      toast.success(`Imported ${imported} chapter(s)`);
+      toast.success(`Imported ${imported} kitab(s)`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to import chapters");
+      toast.error(error instanceof Error ? error.message : "Failed to import kitabs");
     }
   };
 
   return (
     <AdminLayout>
       <AdminPageHeader
-        title="Chapters"
-        subtitle="Babs inside each kitab (e.g. باب بيان الإيمان)."
+        title="Kitabs"
+        subtitle="Major sections inside each book (e.g. كتاب الإيمان)."
         onCreate={() =>
-          setEditing({
-            ...empty,
-            bookId: bookFilter !== "all" ? bookFilter : books[0]?.id || "",
-            kitabId: kitabs.find((k) => k.bookId === (bookFilter !== "all" ? bookFilter : books[0]?.id))?.id || "",
-          })
+          setEditing({ ...empty, bookId: bookFilter !== "all" ? bookFilter : books[0]?.id || "" })
         }
-        createLabel="New chapter"
+        createLabel="New kitab"
         onUpload={handleBulkImport}
-        uploadLabel="Import chapters"
+        uploadLabel="Import kitabs"
         search={q}
         onSearch={setQ}
-        searchPlaceholder="Search chapters…"
+        searchPlaceholder="Search kitabs…"
       />
 
       <div className="mb-6 max-w-xs">
@@ -167,7 +155,7 @@ const ChaptersAdmin = () => {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState>No chapters yet.</EmptyState>
+        <EmptyState>No kitabs yet.</EmptyState>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <table className="w-full text-sm">
@@ -175,26 +163,23 @@ const ChaptersAdmin = () => {
               <tr>
                 <th className="px-5 py-3">Title</th>
                 <th className="px-5 py-3">Book</th>
-                <th className="px-5 py-3">Kitab</th>
                 <th className="px-5 py-3">Hadeeth</th>
                 <th className="px-5 py-3">Lang</th>
                 <th className="px-5 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtered.map((c) => {
-                const book = books.find((b) => b.id === c.bookId);
-                const kitab = kitabs.find((k) => k.id === c.kitabId);
+              {filtered.map((k) => {
+                const book = books.find((b) => b.id === k.bookId);
                 return (
-                  <tr key={c.id} className="transition-colors hover:bg-muted/30">
-                    <td className="px-5 py-4 font-serif text-base text-foreground">{c.title}</td>
+                  <tr key={k.id} className="transition-colors hover:bg-muted/30">
+                    <td className="px-5 py-4 font-serif text-base text-foreground">{k.title}</td>
                     <td className="px-5 py-4 text-foreground/80">{book?.title ?? "—"}</td>
-                    <td className="px-5 py-4 text-muted-foreground">{kitab?.title ?? "—"}</td>
-                    <td className="px-5 py-4 text-muted-foreground">{c.hadeethCount}</td>
-                    <td className="px-5 py-4 uppercase text-muted-foreground">{c.langCode}</td>
+                    <td className="px-5 py-4 text-muted-foreground">{k.hadeethCount}</td>
+                    <td className="px-5 py-4 uppercase text-muted-foreground">{k.langCode}</td>
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => setEditing({ ...c })}>
+                        <Button size="icon" variant="ghost" onClick={() => setEditing({ ...k })}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
@@ -202,10 +187,10 @@ const ChaptersAdmin = () => {
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
                           onClick={() =>
-                            ask(`Delete "${c.title}" and its hadeeth?`, () => {
+                            ask(`Delete "${k.title}" and all its chapters & hadeeth?`, () => {
                               void db
-                                .deleteChapter(c.id)
-                                .then(() => toast.success("Chapter deleted"))
+                                .deleteKitab(k.id)
+                                .then(() => toast.success("Kitab deleted"))
                                 .catch((error: Error) => toast.error(error.message));
                             })
                           }
@@ -226,7 +211,7 @@ const ChaptersAdmin = () => {
         <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
           <SheetHeader>
             <SheetTitle className="font-serif text-2xl">
-              {editing?.id ? "Edit chapter" : "New chapter"}
+              {editing?.id ? "Edit kitab" : "New kitab"}
             </SheetTitle>
           </SheetHeader>
 
@@ -235,10 +220,7 @@ const ChaptersAdmin = () => {
               <Field label="Book">
                 <Select
                   value={editing.bookId || undefined}
-                  onValueChange={(v) => {
-                    const firstKitab = kitabs.find((k) => k.bookId === v);
-                    setEditing({ ...editing, bookId: v, kitabId: firstKitab?.id || "" });
-                  }}
+                  onValueChange={(v) => setEditing({ ...editing, bookId: v })}
                 >
                   <SelectTrigger><SelectValue placeholder="Choose a book" /></SelectTrigger>
                   <SelectContent>
@@ -246,27 +228,6 @@ const ChaptersAdmin = () => {
                       .filter((b) => b.id)
                       .map((b) => (
                         <SelectItem key={b.id} value={b.id}>{b.title}</SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field label="Kitab">
-                <Select
-                  value={editing.kitabId || undefined}
-                  onValueChange={(v) => setEditing({ ...editing, kitabId: v })}
-                  disabled={!editing.bookId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a kitab" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {kitabsForBook
-                      .filter((k) => k.id)
-                      .map((k) => (
-                        <SelectItem key={k.id} value={k.id}>
-                          {k.title}
-                        </SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
@@ -345,4 +306,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export default ChaptersAdmin;
+export default KitabsAdmin;

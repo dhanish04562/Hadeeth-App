@@ -1,1 +1,1 @@
-export type { Book, Chapter, Hadeeth, Language } from "./store";
+export type { Book, Kitab, Chapter, Hadeeth, Language } from "./store";

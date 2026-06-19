@@ -4,6 +4,7 @@ import { isAuthed, logout, getAdminEmail } from "./auth";
 import {
   BookOpenText,
   ListTree,
+  Library,
   ScrollText,
   Languages as LangIcon,
   LogOut,
@@ -16,6 +17,7 @@ import { NuurLogo } from "@/components/NuurLogo";
 const nav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/books", label: "Books", icon: BookOpenText },
+  { to: "/admin/kitabs", label: "Kitabs", icon: Library },
   { to: "/admin/chapters", label: "Chapters", icon: ListTree },
   { to: "/admin/hadeeth", label: "Hadeeth", icon: ScrollText },
   { to: "/admin/languages", label: "Languages", icon: LangIcon },

@@ -2,20 +2,15 @@ const pool = require("../../db/pool");
 const createId = require("../../utils/create-id");
 const pickDefined = require("../../utils/pick-defined");
 
-const SELECT_FIELDS = "id, title, kitab_id, book_id, is_published, notes, lang_code, source_key, sort_order";
+const SELECT_FIELDS = "id, book_id, title, notes, lang_code, is_published, source_key, sort_order";
 
-async function listChapters(filters) {
+async function listKitabs(filters) {
   const conditions = [];
   const values = [];
 
   if (filters.book_id) {
     values.push(filters.book_id);
     conditions.push(`book_id = $${values.length}`);
-  }
-
-  if (filters.kitab_id) {
-    values.push(filters.kitab_id);
-    conditions.push(`kitab_id = $${values.length}`);
   }
 
   if (filters.lang_code) {
@@ -31,7 +26,7 @@ async function listChapters(filters) {
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const query = `
     SELECT ${SELECT_FIELDS}
-    FROM chapters
+    FROM kitabs
     ${whereClause}
     ORDER BY sort_order ASC NULLS LAST, title ASC
   `;
@@ -40,30 +35,29 @@ async function listChapters(filters) {
   return rows;
 }
 
-async function getChapterById(id) {
+async function getKitabById(id) {
   const { rows } = await pool.query(
-    `SELECT ${SELECT_FIELDS} FROM chapters WHERE id = $1`,
+    `SELECT ${SELECT_FIELDS} FROM kitabs WHERE id = $1`,
     [id]
   );
   return rows[0] || null;
 }
 
-async function createChapter(payload) {
+async function createKitab(payload) {
   const id = createId();
-  const { title, kitab_id, book_id, is_published, notes, lang_code, source_key, sort_order } = payload;
+  const { title, book_id, is_published, notes, lang_code, source_key, sort_order } = payload;
 
   const { rows } = await pool.query(
     `
-      INSERT INTO chapters (id, title, kitab_id, book_id, is_published, notes, lang_code, source_key, sort_order)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO kitabs (id, title, book_id, is_published, notes, lang_code, source_key, sort_order)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING ${SELECT_FIELDS}
     `,
     [
       id,
       title,
-      kitab_id || null,
-      book_id || null,
-      is_published ?? false,
+      book_id,
+      is_published ?? true,
       notes || null,
       lang_code || null,
       source_key || null,
@@ -74,7 +68,7 @@ async function createChapter(payload) {
   return rows[0];
 }
 
-async function updateChapter(id, payload) {
+async function updateKitab(id, payload) {
   const updates = pickDefined(payload);
   const entries = Object.entries(updates);
 
@@ -93,7 +87,7 @@ async function updateChapter(id, payload) {
 
   const { rows } = await pool.query(
     `
-      UPDATE chapters
+      UPDATE kitabs
       SET ${setClause}
       WHERE id = $${values.length}
       RETURNING ${SELECT_FIELDS}
@@ -104,15 +98,15 @@ async function updateChapter(id, payload) {
   return rows[0] || null;
 }
 
-async function deleteChapter(id) {
-  const result = await pool.query("DELETE FROM chapters WHERE id = $1", [id]);
+async function deleteKitab(id) {
+  const result = await pool.query("DELETE FROM kitabs WHERE id = $1", [id]);
   return result.rowCount > 0;
 }
 
 module.exports = {
-  listChapters,
-  getChapterById,
-  createChapter,
-  updateChapter,
-  deleteChapter
+  listKitabs,
+  getKitabById,
+  createKitab,
+  updateKitab,
+  deleteKitab
 };
