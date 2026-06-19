@@ -215,7 +215,7 @@ const ChaptersAdmin = () => {
 
           {editing && (
             <div className="mt-6 space-y-5">
-              <Field label="Book">
+                      <Field label="Book">
                 <Select
                   value={editing.bookId}
                   onValueChange={(v) => setEditing({ ...editing, bookId: v })}
@@ -228,6 +228,23 @@ const ChaptersAdmin = () => {
                   </SelectContent>
                 </Select>
               </Field>
+                      {/* Parent selector: choose a Kitab to create a Bab under, leave empty to create a Kitab */}
+                      <Field label="Parent chapter (optional)">
+                        <Select
+                          value={editing.parentId ?? ""}
+                          onValueChange={(v) => setEditing({ ...editing, parentId: v || null })}
+                        >
+                          <SelectTrigger><SelectValue placeholder="None (create top-level Kitab)" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">— None —</SelectItem>
+                            {chapters
+                              .filter((c) => c.bookId === editing.bookId && !c.parentId)
+                              .map((k) => (
+                                <SelectItem key={k.id} value={k.id}>{k.title}</SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
               <Field label="Title">
                 <Input
                   value={editing.title}
