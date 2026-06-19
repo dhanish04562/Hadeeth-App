@@ -3,6 +3,10 @@ export type {
   ImportChapter,
   ImportKitab,
   ImportCollectionPayload,
+  ImportLogStats,
   ImportCollectionStats,
+  ImportLogEntry,
   ImportCollectionResponse,
+  normalizeImportStats,
+  formatImportStats,
 } from "./import";

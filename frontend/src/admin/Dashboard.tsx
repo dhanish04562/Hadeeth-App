@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { AdminLayout } from "./AdminLayout";
 import { AdminPageHeader } from "./AdminUI";
+import { ImportLog } from "./ImportLog";
 import { toast } from "sonner";
 import { useDB, db as api } from "@/data/store";
 import type { ImportCollectionResponse } from "@/data/import";
+import { normalizeImportStats } from "@/data/import";
+import { appendImportLog, summarizeImportStats } from "./import-log";
 import { BookOpenText, ListTree, Library, ScrollText, Languages } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   const db = useDB();
+  const [importLogKey, setImportLogKey] = useState(0);
 
   const stats = [
     { label: "Books", value: db.books.length, icon: BookOpenText, to: "/admin/books" },
@@ -39,18 +44,34 @@ const Dashboard = () => {
       };
 
       if (!res.ok) {
+        appendImportLog({
+          filename: file.name,
+          book_title: typeof payload.book_title === "string" ? payload.book_title : undefined,
+          status: "error",
+          message: body.message || res.statusText || "Upload failed",
+        });
+        setImportLogKey((k) => k + 1);
         throw new Error(body.message || res.statusText || "Upload failed");
       }
 
       if (body.stats) {
-        const s = body.stats;
-        toast.success(
-          `Imported ${s.kitabs_created} kitab(s), ${s.chapters_created} chapter(s), ${s.hadiths_created} hadith(s)` +
-            (s.duplicates_skipped
-              ? ` · ${s.duplicates_skipped} duplicate(s) updated/skipped`
-              : "")
-        );
+        const logStats = normalizeImportStats(body.stats);
+        appendImportLog({
+          filename: file.name,
+          book_title: body.stats.book_title,
+          status: "success",
+          message: body.message,
+          stats: logStats,
+        });
+        setImportLogKey((k) => k + 1);
+        toast.success(`Import complete · ${summarizeImportStats(logStats)}`);
       } else {
+        appendImportLog({
+          filename: file.name,
+          status: "success",
+          message: body.message || "File uploaded",
+        });
+        setImportLogKey((k) => k + 1);
         toast.success(body.message || "File uploaded");
       }
 
@@ -86,6 +107,8 @@ const Dashboard = () => {
           </Link>
         ))}
       </div>
+
+      <ImportLog refreshKey={importLogKey} />
 
       <div className="mt-12 rounded-2xl border border-border bg-card p-6 md:p-8">
         <h2 className="mb-5 font-serif text-2xl text-foreground">Recent hadeeth</h2>

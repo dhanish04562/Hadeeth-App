@@ -15,7 +15,7 @@ function emptyStats() {
   return {
     kitabs_created: 0,
     chapters_created: 0,
-    hadiths_created: 0,
+    hadeeth_created: 0,
     duplicates_skipped: 0
   };
 }
@@ -191,7 +191,7 @@ async function upsertHadeeth(client, chapterId, hadithData, stats) {
     `,
     [id, chapterId, referenceNumber, arabic || null, english || null, reportedBy || null, grade || null]
   );
-  stats.hadiths_created += 1;
+  stats.hadeeth_created += 1;
   return id;
 }
 
