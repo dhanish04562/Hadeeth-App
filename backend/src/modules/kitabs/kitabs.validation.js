@@ -15,9 +15,7 @@ const createKitabSchema = z.object({
   book_id: z.string().length(24),
   is_published: z.boolean().optional().default(true),
   notes: z.string().trim().optional(),
-  lang_code: z.string().trim().max(20).optional(),
-  source_key: z.string().trim().optional(),
-  sort_order: z.number().int().optional()
+  lang_code: z.string().trim().max(20).optional()
 });
 
 const updateKitabSchema = createKitabSchema.partial().refine(

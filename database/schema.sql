@@ -27,8 +27,6 @@ CREATE TABLE IF NOT EXISTS kitabs (
   notes TEXT,
   lang_code VARCHAR(20),
   is_published BOOLEAN DEFAULT TRUE,
-  source_key TEXT,
-  sort_order INTEGER,
   CONSTRAINT fk_kitabs_book
     FOREIGN KEY (book_id)
     REFERENCES books(id)
@@ -43,8 +41,6 @@ CREATE TABLE IF NOT EXISTS chapters (
   is_published BOOLEAN DEFAULT FALSE,
   notes TEXT,
   lang_code VARCHAR(6),
-  source_key TEXT,
-  sort_order INTEGER,
   CONSTRAINT fk_chapters_kitab
     FOREIGN KEY (kitab_id)
     REFERENCES kitabs(id)
@@ -68,7 +64,6 @@ CREATE TABLE IF NOT EXISTS hadeeth (
   refernce_number INT,
   reported_by VARCHAR(255),
   lang_code VARCHAR(6),
-  source_key TEXT,
   CONSTRAINT fk_hadeeth_chapter
     FOREIGN KEY (chapter_id)
     REFERENCES chapters(id)

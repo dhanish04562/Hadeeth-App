@@ -2,7 +2,7 @@ const pool = require("../../db/pool");
 const createId = require("../../utils/create-id");
 const pickDefined = require("../../utils/pick-defined");
 
-const SELECT_FIELDS = "id, title, kitab_id, book_id, is_published, notes, lang_code, source_key, sort_order";
+const SELECT_FIELDS = "id, title, kitab_id, book_id, is_published, notes, lang_code";
 
 async function listChapters(filters) {
   const conditions = [];
@@ -33,7 +33,7 @@ async function listChapters(filters) {
     SELECT ${SELECT_FIELDS}
     FROM chapters
     ${whereClause}
-    ORDER BY sort_order ASC NULLS LAST, title ASC
+    ORDER BY title ASC
   `;
 
   const { rows } = await pool.query(query, values);
@@ -50,12 +50,12 @@ async function getChapterById(id) {
 
 async function createChapter(payload) {
   const id = createId();
-  const { title, kitab_id, book_id, is_published, notes, lang_code, source_key, sort_order } = payload;
+  const { title, kitab_id, book_id, is_published, notes, lang_code } = payload;
 
   const { rows } = await pool.query(
     `
-      INSERT INTO chapters (id, title, kitab_id, book_id, is_published, notes, lang_code, source_key, sort_order)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO chapters (id, title, kitab_id, book_id, is_published, notes, lang_code)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING ${SELECT_FIELDS}
     `,
     [
@@ -65,9 +65,7 @@ async function createChapter(payload) {
       book_id || null,
       is_published ?? false,
       notes || null,
-      lang_code || null,
-      source_key || null,
-      sort_order ?? null
+      lang_code || null
     ]
   );
 
@@ -75,8 +73,9 @@ async function createChapter(payload) {
 }
 
 async function updateChapter(id, payload) {
+  const allowed = ["title", "kitab_id", "book_id", "is_published", "notes", "lang_code"];
   const updates = pickDefined(payload);
-  const entries = Object.entries(updates);
+  const entries = Object.entries(updates).filter(([key]) => allowed.includes(key));
 
   if (!entries.length) {
     const error = new Error("No fields were provided to update.");

@@ -5,10 +5,6 @@ const DEFAULT_COLLECTION_KEY = "sahih-muslim";
 const DEFAULT_COLLECTION_NAME_AR = "صحيح مسلم";
 const DEFAULT_COLLECTION_NAME_EN = "Sahih Muslim";
 
-function numberKey(value) {
-  return String(Number(value) || 0).padStart(3, "0");
-}
-
 function text(value, fallback = "") {
   return typeof value === "string" ? value.trim() : fallback;
 }
@@ -45,37 +41,8 @@ function assertKitabPayload(payload) {
   }
 }
 
-async function ensureImportSchema(client) {
-  await client.query(`
-    ALTER TABLE books ADD COLUMN IF NOT EXISTS source_key TEXT;
-    ALTER TABLE kitabs ADD COLUMN IF NOT EXISTS source_key TEXT;
-    ALTER TABLE kitabs ADD COLUMN IF NOT EXISTS sort_order INTEGER;
-    ALTER TABLE chapters ADD COLUMN IF NOT EXISTS source_key TEXT;
-    ALTER TABLE chapters ADD COLUMN IF NOT EXISTS sort_order INTEGER;
-    ALTER TABLE hadeeth ADD COLUMN IF NOT EXISTS source_key TEXT;
-
-    CREATE UNIQUE INDEX IF NOT EXISTS ux_books_source_key
-      ON books(source_key)
-      WHERE source_key IS NOT NULL;
-
-    CREATE UNIQUE INDEX IF NOT EXISTS ux_kitabs_source_key
-      ON kitabs(source_key)
-      WHERE source_key IS NOT NULL;
-
-    CREATE UNIQUE INDEX IF NOT EXISTS ux_chapters_source_key
-      ON chapters(source_key)
-      WHERE source_key IS NOT NULL;
-
-    CREATE UNIQUE INDEX IF NOT EXISTS ux_hadeeth_source_key
-      ON hadeeth(source_key)
-      WHERE source_key IS NOT NULL;
-
-    CREATE INDEX IF NOT EXISTS ix_chapters_kitab_sort
-      ON chapters(kitab_id, sort_order, title);
-
-    CREATE INDEX IF NOT EXISTS ix_hadeeth_chapter_reference
-      ON hadeeth(chapter_id, refernce_number);
-  `);
+function collectionNotes(collectionKey, nameEn) {
+  return `collection_key:${collectionKey};summary:${nameEn}`;
 }
 
 async function ensureArabicLanguage(client) {
@@ -92,17 +59,17 @@ async function upsertCollection(client, payload) {
   const collectionKey = text(payload.collection_key, DEFAULT_COLLECTION_KEY);
   const nameAr = text(payload.collection_name_ar, DEFAULT_COLLECTION_NAME_AR);
   const nameEn = text(payload.collection_name_en, DEFAULT_COLLECTION_NAME_EN);
+  const notes = collectionNotes(collectionKey, nameEn);
 
   const existing = await client.query(
     `
       SELECT id
       FROM books
-      WHERE source_key = $1
-        OR LOWER(title) IN (LOWER($2), LOWER($3))
-      ORDER BY source_key = $1 DESC
+      WHERE LOWER(title) IN (LOWER($1), LOWER($2))
+         OR notes LIKE $3
       LIMIT 1
     `,
-    [collectionKey, nameAr, nameEn]
+    [nameAr, nameEn, `%collection_key:${collectionKey}%`]
   );
 
   if (existing.rows[0]) {
@@ -112,14 +79,13 @@ async function upsertCollection(client, payload) {
         SET
           title = $2,
           author = COALESCE(NULLIF(author, ''), 'Imam Muslim'),
-          notes = COALESCE(NULLIF(notes, ''), $3),
+          notes = $3,
           is_published = true,
-          lang_code = 'ar',
-          source_key = $4
+          lang_code = 'ar'
         WHERE id = $1
         RETURNING id
       `,
-      [existing.rows[0].id, nameAr, nameEn, collectionKey]
+      [existing.rows[0].id, nameAr, notes]
     );
     return rows[0].id;
   }
@@ -127,19 +93,25 @@ async function upsertCollection(client, payload) {
   const id = createId();
   const { rows } = await client.query(
     `
-      INSERT INTO books (id, title, author, notes, is_published, lang_code, source_key)
-      VALUES ($1, $2, 'Imam Muslim', $3, true, 'ar', $4)
+      INSERT INTO books (id, title, author, notes, is_published, lang_code)
+      VALUES ($1, $2, 'Imam Muslim', $3, true, 'ar')
       RETURNING id
     `,
-    [id, nameAr, nameEn, collectionKey]
+    [id, nameAr, notes]
   );
   return rows[0].id;
 }
 
 async function upsertKitab(client, payload) {
   const existing = await client.query(
-    "SELECT id FROM kitabs WHERE source_key = $1 LIMIT 1",
-    [payload.sourceKey]
+    `
+      SELECT id
+      FROM kitabs
+      WHERE book_id = $1
+        AND notes = $2
+      LIMIT 1
+    `,
+    [payload.bookId, payload.notes]
   );
 
   if (existing.rows[0]) {
@@ -151,18 +123,11 @@ async function upsertKitab(client, payload) {
           book_id = $3,
           is_published = true,
           notes = $4,
-          lang_code = 'ar',
-          sort_order = $5
+          lang_code = 'ar'
         WHERE id = $1
         RETURNING id
       `,
-      [
-        existing.rows[0].id,
-        payload.title,
-        payload.bookId,
-        payload.notes,
-        payload.sortOrder
-      ]
+      [existing.rows[0].id, payload.title, payload.bookId, payload.notes]
     );
     return { id: rows[0].id, created: false };
   }
@@ -170,13 +135,11 @@ async function upsertKitab(client, payload) {
   const id = createId();
   const { rows } = await client.query(
     `
-      INSERT INTO kitabs (
-        id, title, book_id, is_published, notes, lang_code, source_key, sort_order
-      )
-      VALUES ($1, $2, $3, true, $4, 'ar', $5, $6)
+      INSERT INTO kitabs (id, title, book_id, is_published, notes, lang_code)
+      VALUES ($1, $2, $3, true, $4, 'ar')
       RETURNING id
     `,
-    [id, payload.title, payload.bookId, payload.notes, payload.sourceKey, payload.sortOrder]
+    [id, payload.title, payload.bookId, payload.notes]
   );
 
   return { id: rows[0].id, created: true };
@@ -184,8 +147,14 @@ async function upsertKitab(client, payload) {
 
 async function upsertChapter(client, payload) {
   const existing = await client.query(
-    "SELECT id FROM chapters WHERE source_key = $1 LIMIT 1",
-    [payload.sourceKey]
+    `
+      SELECT id
+      FROM chapters
+      WHERE kitab_id = $1
+        AND notes = $2
+      LIMIT 1
+    `,
+    [payload.kitabId, payload.notes]
   );
 
   if (existing.rows[0]) {
@@ -198,8 +167,7 @@ async function upsertChapter(client, payload) {
           book_id = $4,
           is_published = true,
           notes = $5,
-          lang_code = 'ar',
-          sort_order = $6
+          lang_code = 'ar'
         WHERE id = $1
         RETURNING id
       `,
@@ -208,8 +176,7 @@ async function upsertChapter(client, payload) {
         payload.title,
         payload.kitabId,
         payload.bookId,
-        payload.notes,
-        payload.sortOrder
+        payload.notes
       ]
     );
     return { id: rows[0].id, created: false };
@@ -218,13 +185,11 @@ async function upsertChapter(client, payload) {
   const id = createId();
   const { rows } = await client.query(
     `
-      INSERT INTO chapters (
-        id, title, kitab_id, book_id, is_published, notes, lang_code, source_key, sort_order
-      )
-      VALUES ($1, $2, $3, $4, true, $5, 'ar', $6, $7)
+      INSERT INTO chapters (id, title, kitab_id, book_id, is_published, notes, lang_code)
+      VALUES ($1, $2, $3, $4, true, $5, 'ar')
       RETURNING id
     `,
-    [id, payload.title, payload.kitabId, payload.bookId, payload.notes, payload.sourceKey, payload.sortOrder]
+    [id, payload.title, payload.kitabId, payload.bookId, payload.notes]
   );
 
   return { id: rows[0].id, created: true };
@@ -232,8 +197,14 @@ async function upsertChapter(client, payload) {
 
 async function upsertHadeeth(client, payload) {
   const existing = await client.query(
-    "SELECT id FROM hadeeth WHERE source_key = $1 LIMIT 1",
-    [payload.sourceKey]
+    `
+      SELECT id
+      FROM hadeeth
+      WHERE chapter_id = $1
+        AND refernce_number = $2
+      LIMIT 1
+    `,
+    [payload.chapterId, payload.hadithNumber]
   );
 
   if (existing.rows[0]) {
@@ -264,11 +235,11 @@ async function upsertHadeeth(client, payload) {
   await client.query(
     `
       INSERT INTO hadeeth (
-        id, chapter_id, is_published, notes, hadeeth, refernce_number, reported_by, lang_code, source_key
+        id, chapter_id, is_published, notes, hadeeth, refernce_number, reported_by, lang_code
       )
-      VALUES ($1, $2, true, $3, $4, $5, NULL, 'ar', $6)
+      VALUES ($1, $2, true, $3, $4, $5, NULL, 'ar')
     `,
-    [createId(), payload.chapterId, payload.notes, payload.arabic, payload.hadithNumber, payload.sourceKey]
+    [createId(), payload.chapterId, payload.notes, payload.arabic, payload.hadithNumber]
   );
 
   return { created: true };
@@ -287,20 +258,16 @@ async function importKitab(payload) {
 
   try {
     await client.query("BEGIN");
-    await ensureImportSchema(client);
     await ensureArabicLanguage(client);
 
-    const collectionKey = text(payload.collection_key, DEFAULT_COLLECTION_KEY);
     const collectionId = await upsertCollection(client, payload);
     const bookNumber = requirePositiveInt(payload.book_number, "book_number");
-    const kitabSourceKey = `${collectionKey}:kitab:${numberKey(bookNumber)}`;
+    const kitabNotes = `kitab_number:${bookNumber}`;
 
     const kitab = await upsertKitab(client, {
-      sourceKey: kitabSourceKey,
       title: text(payload.book_name_ar),
       bookId: collectionId,
-      notes: `kitab_number:${bookNumber}`,
-      sortOrder: bookNumber
+      notes: kitabNotes
     });
 
     summary.collection = collectionId;
@@ -317,14 +284,12 @@ async function importKitab(payload) {
         throw error;
       }
 
-      const chapterSourceKey = `${collectionKey}:kitab:${numberKey(bookNumber)}:chapter:${numberKey(chapterNumber)}`;
+      const chapterNotes = `kitab_number:${bookNumber};chapter_number:${chapterNumber}`;
       const bab = await upsertChapter(client, {
-        sourceKey: chapterSourceKey,
         title: chapterTitle,
         kitabId: kitab.id,
         bookId: collectionId,
-        notes: `kitab_number:${bookNumber};chapter_number:${chapterNumber}`,
-        sortOrder: chapterNumber
+        notes: chapterNotes
       });
 
       if (bab.created) summary.chapters.created += 1;
@@ -343,13 +308,11 @@ async function importKitab(payload) {
           throw error;
         }
 
-        const hadithSourceKey = `${collectionKey}:kitab:${numberKey(bookNumber)}:chapter:${numberKey(chapterNumber)}:hadith:${numberKey(hadithNumber)}`;
         const result = await upsertHadeeth(client, {
-          sourceKey: hadithSourceKey,
           chapterId: bab.id,
           hadithNumber,
           arabic,
-          notes: `kitab_number:${bookNumber};chapter_number:${chapterNumber}`
+          notes: chapterNotes
         });
 
         if (result.created) summary.hadeeth.created += 1;

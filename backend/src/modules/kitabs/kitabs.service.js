@@ -2,7 +2,7 @@ const pool = require("../../db/pool");
 const createId = require("../../utils/create-id");
 const pickDefined = require("../../utils/pick-defined");
 
-const SELECT_FIELDS = "id, book_id, title, notes, lang_code, is_published, source_key, sort_order";
+const SELECT_FIELDS = "id, book_id, title, notes, lang_code, is_published";
 
 async function listKitabs(filters) {
   const conditions = [];
@@ -28,7 +28,7 @@ async function listKitabs(filters) {
     SELECT ${SELECT_FIELDS}
     FROM kitabs
     ${whereClause}
-    ORDER BY sort_order ASC NULLS LAST, title ASC
+    ORDER BY title ASC
   `;
 
   const { rows } = await pool.query(query, values);
@@ -45,12 +45,12 @@ async function getKitabById(id) {
 
 async function createKitab(payload) {
   const id = createId();
-  const { title, book_id, is_published, notes, lang_code, source_key, sort_order } = payload;
+  const { title, book_id, is_published, notes, lang_code } = payload;
 
   const { rows } = await pool.query(
     `
-      INSERT INTO kitabs (id, title, book_id, is_published, notes, lang_code, source_key, sort_order)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO kitabs (id, title, book_id, is_published, notes, lang_code)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING ${SELECT_FIELDS}
     `,
     [
@@ -59,9 +59,7 @@ async function createKitab(payload) {
       book_id,
       is_published ?? true,
       notes || null,
-      lang_code || null,
-      source_key || null,
-      sort_order ?? null
+      lang_code || null
     ]
   );
 
@@ -69,8 +67,9 @@ async function createKitab(payload) {
 }
 
 async function updateKitab(id, payload) {
+  const allowed = ["title", "book_id", "is_published", "notes", "lang_code"];
   const updates = pickDefined(payload);
-  const entries = Object.entries(updates);
+  const entries = Object.entries(updates).filter(([key]) => allowed.includes(key));
 
   if (!entries.length) {
     const error = new Error("No fields were provided to update.");

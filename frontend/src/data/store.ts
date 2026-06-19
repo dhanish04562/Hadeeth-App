@@ -84,7 +84,6 @@ type RawKitab = {
   notes?: string;
   langCode?: string;
   lang_code?: string;
-  sort_order?: number;
 };
 
 type RawChapter = {
@@ -99,7 +98,6 @@ type RawChapter = {
   notes?: string;
   langCode?: string;
   lang_code?: string;
-  sort_order?: number;
 };
 
 type RawHadeeth = {

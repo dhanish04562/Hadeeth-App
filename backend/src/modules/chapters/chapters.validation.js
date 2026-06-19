@@ -17,9 +17,7 @@ const createChapterSchema = z.object({
   book_id: z.string().length(24).optional(),
   is_published: z.boolean().optional().default(false),
   notes: z.string().trim().optional(),
-  lang_code: z.string().trim().max(6).optional(),
-  source_key: z.string().trim().optional(),
-  sort_order: z.number().int().optional()
+  lang_code: z.string().trim().max(6).optional()
 });
 
 const updateChapterSchema = createChapterSchema.partial().refine(

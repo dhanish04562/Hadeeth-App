@@ -86,16 +86,6 @@ ALTER TABLE chapters
   ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS idx_chapters_kitab_id ON chapters(kitab_id);
-
--- Optional import columns (used by import-kitab utility)
-ALTER TABLE kitabs ADD COLUMN IF NOT EXISTS source_key TEXT;
-ALTER TABLE kitabs ADD COLUMN IF NOT EXISTS sort_order INTEGER;
-
-CREATE UNIQUE INDEX IF NOT EXISTS ux_kitabs_source_key
-  ON kitabs(source_key)
-  WHERE source_key IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS ix_chapters_kitab_sort
-  ON chapters(kitab_id, sort_order, title);
+CREATE INDEX IF NOT EXISTS ix_chapters_kitab_title ON chapters(kitab_id, title);
 
 COMMIT;
