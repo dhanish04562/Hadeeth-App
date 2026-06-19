@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "cleanup:trial-data": "node scripts/cleanup-trial-data.js",
+    "import:malim-sunnah": "node scripts/import-malim-sunnah.js",
     "start": "node src/server.js"
   },
   "keywords": [
@@ -27,6 +28,7 @@
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.1",
     "vite": "^8.0.8",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.76"
   }
 }
