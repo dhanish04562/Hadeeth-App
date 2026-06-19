@@ -70,7 +70,7 @@ const BooksAdmin = () => {
 
   const handleBulkImport = async (file: File) => {
     try {
-      let data: any[] = [];
+      let data: unknown[] = [];
 
       if (file.name.endsWith(".json")) {
         const text = await file.text();
@@ -95,15 +95,16 @@ const BooksAdmin = () => {
       }
 
       let imported = 0;
-      for (const item of data) {
+      for (const raw of data) {
+        const item = raw as Record<string, unknown>;
         const book: Book = {
-          id: item.id || "",
-          title: String(item.title || ""),
-          author: String(item.author || ""),
-          notes: String(item.notes || ""),
-          hadeethCount: Number(item.hadeeth_count || item.hadeethCount || 0),
-          era: String(item.era || ""),
-          langCode: String(item.lang_code || item.langCode || "ta"),
+          id: (item.id as string) || "",
+          title: String(item.title ?? ""),
+          author: String(item.author ?? ""),
+          notes: String(item.notes ?? ""),
+          hadeethCount: Number(item.hadeeth_count ?? item.hadeethCount ?? 0),
+          era: String(item.era ?? ""),
+          langCode: String(item.lang_code ?? item.langCode ?? "ta"),
           isPublished: Boolean(item.is_published ?? item.isPublished ?? true),
         };
 

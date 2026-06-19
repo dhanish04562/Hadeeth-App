@@ -97,7 +97,7 @@ const HadeethAdmin = () => {
 
   const handleBulkImport = async (file: File) => {
     try {
-      let data: any[] = [];
+      let data: unknown[] = [];
 
       if (file.name.endsWith(".json")) {
         const text = await file.text();
@@ -122,18 +122,19 @@ const HadeethAdmin = () => {
       }
 
       let imported = 0;
-      for (const item of data) {
+      for (const raw of data) {
+        const item = raw as Record<string, unknown>;
         const hadeeth: Hadeeth = {
-          id: item.id || "",
-          bookId: String(item.book_id || item.bookId || ""),
-          chapterId: String(item.chapter_id || item.chapterId || ""),
-          referenceNumber: Number(item.refernce_number || item.referenceNumber || 0),
-          reportedBy: String(item.reported_by || item.reportedBy || ""),
-          arabic: String(item.arabic || ""),
-          english: String(item.hadeeth || item.english || ""),
-          grade: (item.grade || "") as "" | "Sahih" | "Hasan" | "Da'if",
-          notes: String(item.notes || ""),
-          langCode: String(item.lang_code || item.langCode || "ta"),
+          id: (item.id as string) || "",
+          bookId: String(item.book_id ?? item.bookId ?? ""),
+          chapterId: String(item.chapter_id ?? item.chapterId ?? ""),
+          referenceNumber: Number(item.refernce_number ?? item.referenceNumber ?? 0),
+          reportedBy: String(item.reported_by ?? item.reportedBy ?? ""),
+          arabic: String(item.arabic ?? ""),
+          english: String(item.hadeeth ?? item.english ?? ""),
+          grade: (String(item.grade ?? "")) as "" | "Sahih" | "Hasan" | "Da'if",
+          notes: String(item.notes ?? ""),
+          langCode: String(item.lang_code ?? item.langCode ?? "ta"),
           isPublished: Boolean(item.is_published ?? item.isPublished ?? true),
         };
 

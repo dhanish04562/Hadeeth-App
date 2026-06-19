@@ -54,6 +54,32 @@ router.get(
 );
 
 router.get(
+  "/public/books/:bookId/chapters/tree",
+  asyncHandler(async (req, res) => {
+    const chapters = await chaptersService.listChapters({
+      book_id: req.params.bookId,
+      lang_code: getLangCode(req.query),
+      is_published: true
+    });
+
+    // Build tree: top-level chapters (kitab) have parent_id == null
+    const byParent = {};
+    for (const c of chapters) {
+      const pid = c.parent_id || null;
+      if (!byParent[pid]) byParent[pid] = [];
+      byParent[pid].push(c);
+    }
+
+    const tree = (byParent[null] || []).map((parent) => ({
+      ...parent,
+      children: byParent[parent.id] || []
+    }));
+
+    res.json(tree);
+  })
+);
+
+router.get(
   "/public/chapters/:chapterId",
   asyncHandler(async (req, res) => {
     const chapter = await chaptersService.getChapterById(req.params.chapterId);
@@ -73,6 +99,18 @@ router.get(
       is_published: true
     });
     res.json(hadeeth);
+  })
+);
+
+router.get(
+  "/public/chapters/:chapterId/children",
+  asyncHandler(async (req, res) => {
+    const children = await chaptersService.listChapters({
+      parent_id: req.params.chapterId,
+      lang_code: getLangCode(req.query),
+      is_published: true
+    });
+    res.json(children);
   })
 );
 

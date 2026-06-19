@@ -42,7 +42,7 @@ const LanguagesAdmin = () => {
 
   const handleBulkImport = async (file: File) => {
     try {
-      let data: any[] = [];
+      let data: unknown[] = [];
 
       if (file.name.endsWith(".json")) {
         const text = await file.text();
@@ -67,10 +67,11 @@ const LanguagesAdmin = () => {
       }
 
       let imported = 0;
-      for (const item of data) {
+      for (const raw of data) {
+        const item = raw as Record<string, unknown>;
         const language: Language = {
-          code: String(item.code || "").trim().toLowerCase(),
-          name: String(item.name || item.nativeName || ""),
+          code: String(item.code ?? "").trim().toLowerCase(),
+          name: String(item.name ?? item.nativeName ?? ""),
         };
 
         if (language.code && language.name) {
