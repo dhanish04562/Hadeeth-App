@@ -3,6 +3,7 @@ import { Hadeeth, useDB } from "@/data/store";
 import { Bookmark, Share2, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function HadeethCard({
   h,
@@ -13,14 +14,18 @@ export function HadeethCard({
   index?: number;
   compact?: boolean;
 }) {
-  const { books } = useDB();
-  const book = books.find((b) => b.id === h.bookId);
+  const { nodes } = useDB();
+  const { lang, getText } = useLanguage();
+  const node = nodes.find((n) => n.id === h.node_id);
+  const displayText = getText(h);
+  const showOtherTranslations =
+    lang === "ar" ? h.tamil || h.english : lang === "ta" ? h.english : h.tamil;
+
   return (
     <article
       style={{ animationDelay: `${index * 60}ms` }}
       className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-soft transition-all duration-500 animate-fade-in hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elegant md:p-8"
     >
-      {/* corner ornament */}
       <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-gold opacity-[0.08] blur-2xl transition-opacity group-hover:opacity-20" />
 
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -30,10 +35,10 @@ export function HadeethCard({
           </div>
           <div className="leading-tight">
             <Link
-              to={`/book/${h.bookId}`}
+              to={`/node/${h.node_id}`}
               className="font-serif text-base text-foreground transition-colors hover:text-primary"
             >
-              {book?.title}
+              {node?.title || "Unknown"}
             </Link>
             <p className="text-xs text-muted-foreground">
               Hadeeth #{h.referenceNumber} · Reported by {h.reportedBy}
@@ -57,20 +62,26 @@ export function HadeethCard({
         {h.arabic}
       </p>
 
-      <div className="my-6 flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-        <span className="h-px flex-1 bg-border" />
-        <span>Translations</span>
-        <span className="h-px flex-1 bg-border" />
-      </div>
-
-      {h.tamil && (
-        <p className={`mt-4 font-serif text-foreground/90 ${compact ? "text-lg" : "text-xl leading-relaxed md:text-[22px]"}`}>
-          {h.tamil}
-        </p>
+      {displayText && (
+        <>
+          <div className="my-6 flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            <span>{lang === "ta" ? "தமிழ்" : lang === "ar" ? "ترجمة" : "Translation"}</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <p className={`font-serif text-foreground/90 ${compact ? "text-lg" : "text-xl leading-relaxed md:text-[22px]"}`}>
+            {displayText}
+          </p>
+        </>
       )}
-      {h.english && (
-        <p className={`mt-4 font-serif text-foreground/90 ${compact ? "text-lg" : "text-xl leading-relaxed md:text-[22px]"}`}>
-          {h.english}
+
+      {showOtherTranslations && (
+        <p className={`mt-3 text-sm text-muted-foreground/70 italic border-l-2 border-border pl-3 ${compact ? "text-sm" : "text-base"}`}>
+          {lang === "ar"
+            ? `— ${showOtherTranslations}`
+            : lang === "ta"
+            ? `EN: ${showOtherTranslations}`
+            : `த: ${showOtherTranslations}`}
         </p>
       )}
 

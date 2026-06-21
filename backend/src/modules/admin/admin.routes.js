@@ -1,175 +1,100 @@
 const express = require("express");
 const asyncHandler = require("../../middlewares/async-handler");
-const booksService = require("../books/books.service");
-const kitabsService = require("../kitabs/kitabs.service");
-const chaptersService = require("../chapters/chapters.service");
+const nodesService = require("../nodes/nodes.service");
 const hadeethService = require("../hadeeth/hadeeth.service");
 const languagesService = require("../languages/languages.service");
-const cleanupTrialData = require("../../utils/cleanup-trial-data");
 const pool = require("../../db/pool");
-const { importKitab, isKitabImport } = require("../../utils/import-kitab");
 const { importCollection, isCollectionImport } = require("../../utils/import-collection");
+const { importKitab, isKitabImport } = require("../../utils/import-kitab");
 
 const fs = require("fs").promises;
 const path = require("path");
 
 const router = express.Router();
 
-router.get(
-  "/books",
-  asyncHandler(async (req, res) => {
-    const records = await booksService.listBooks(req.query);
-    res.json(records);
-  })
-);
-
-router.post(
-  "/books",
-  asyncHandler(async (req, res) => {
-    const record = await booksService.createBook(req.body);
-    res.status(201).json(record);
-  })
-);
+// =====================================================================
+// Nodes CRUD (the unified hierarchy)
+// =====================================================================
 
 router.get(
-  "/books/:id",
+  "/nodes",
   asyncHandler(async (req, res) => {
-    const record = await booksService.getBookById(req.params.id);
-    if (!record) {
-      return res.status(404).json({ message: "Book not found." });
-    }
-    return res.json(record);
-  })
-);
-
-async function updateBook(req, res) {
-  const record = await booksService.updateBook(req.params.id, req.body);
-  if (!record) {
-    return res.status(404).json({ message: "Book not found." });
-  }
-  return res.json(record);
-}
-
-router.patch("/books/:id", asyncHandler(updateBook));
-router.put("/books/:id", asyncHandler(updateBook));
-
-router.delete(
-  "/books/:id",
-  asyncHandler(async (req, res) => {
-    const removed = await booksService.deleteBook(req.params.id);
-    return removed ? res.status(204).send() : res.status(404).json({ message: "Book not found." });
-  })
-);
-
-router.get(
-  "/kitabs",
-  asyncHandler(async (req, res) => {
-    const records = await kitabsService.listKitabs({
+    const nodes = await nodesService.listNodes({
       ...req.query,
-      book_id: req.query.bookId || req.query.book_id
+      parent_id: req.query.parentId ?? req.query.parent_id
     });
-    res.json(records);
+    res.json(nodes);
   })
 );
 
 router.post(
-  "/kitabs",
+  "/nodes",
   asyncHandler(async (req, res) => {
-    const record = await kitabsService.createKitab(req.body);
-    res.status(201).json(record);
+    const node = await nodesService.createNode(req.body);
+    res.status(201).json(node);
   })
 );
 
 router.get(
-  "/kitabs/:id",
+  "/nodes/:id",
   asyncHandler(async (req, res) => {
-    const record = await kitabsService.getKitabById(req.params.id);
-    if (!record) {
-      return res.status(404).json({ message: "Kitab not found." });
+    const node = await nodesService.getNodeById(req.params.id);
+    if (!node) {
+      return res.status(404).json({ message: "Node not found." });
     }
-    return res.json(record);
+    return res.json(node);
   })
 );
 
-async function updateKitab(req, res) {
-  const record = await kitabsService.updateKitab(req.params.id, req.body);
-  if (!record) {
-    return res.status(404).json({ message: "Kitab not found." });
+async function updateNode(req, res) {
+  const node = await nodesService.updateNode(req.params.id, req.body);
+  if (!node) {
+    return res.status(404).json({ message: "Node not found." });
   }
-  return res.json(record);
+  return res.json(node);
 }
 
-router.patch("/kitabs/:id", asyncHandler(updateKitab));
-router.put("/kitabs/:id", asyncHandler(updateKitab));
+router.patch("/nodes/:id", asyncHandler(updateNode));
+router.put("/nodes/:id", asyncHandler(updateNode));
 
 router.delete(
-  "/kitabs/:id",
+  "/nodes/:id",
   asyncHandler(async (req, res) => {
-    const removed = await kitabsService.deleteKitab(req.params.id);
-    return removed
-      ? res.status(204).send()
-      : res.status(404).json({ message: "Kitab not found." });
-  })
-);
-
-router.get(
-  "/chapters",
-  asyncHandler(async (req, res) => {
-    const records = await chaptersService.listChapters({
-      ...req.query,
-      book_id: req.query.bookId || req.query.book_id,
-      kitab_id: req.query.kitabId || req.query.kitab_id
-    });
-    res.json(records);
-  })
-);
-
-router.post(
-  "/chapters",
-  asyncHandler(async (req, res) => {
-    const record = await chaptersService.createChapter(req.body);
-    res.status(201).json(record);
-  })
-);
-
-router.get(
-  "/chapters/:id",
-  asyncHandler(async (req, res) => {
-    const record = await chaptersService.getChapterById(req.params.id);
-    if (!record) {
-      return res.status(404).json({ message: "Chapter not found." });
+    try {
+      const removed = await nodesService.deleteNode(req.params.id);
+      return removed ? res.status(204).send() : res.status(404).json({ message: "Node not found." });
+    } catch (err) {
+      return res.status(err.statusCode || 500).json({ message: err.message });
     }
-    return res.json(record);
   })
 );
 
-async function updateChapter(req, res) {
-  const record = await chaptersService.updateChapter(req.params.id, req.body);
-  if (!record) {
-    return res.status(404).json({ message: "Chapter not found." });
-  }
-  return res.json(record);
-}
-
-router.patch("/chapters/:id", asyncHandler(updateChapter));
-router.put("/chapters/:id", asyncHandler(updateChapter));
-
-router.delete(
-  "/chapters/:id",
+router.get(
+  "/nodes/:id/children",
   asyncHandler(async (req, res) => {
-    const removed = await chaptersService.deleteChapter(req.params.id);
-    return removed
-      ? res.status(204).send()
-      : res.status(404).json({ message: "Chapter not found." });
+    const children = await nodesService.getNodeChildren(req.params.id, req.query);
+    res.json(children);
   })
 );
+
+router.get(
+  "/nodes/:id/ancestors",
+  asyncHandler(async (req, res) => {
+    const ancestors = await nodesService.getNodeAncestors(req.params.id);
+    res.json(ancestors);
+  })
+);
+
+// =====================================================================
+// Hadeeth CRUD
+// =====================================================================
 
 router.get(
   "/hadeeth",
   asyncHandler(async (req, res) => {
     const records = await hadeethService.listHadeeth({
       ...req.query,
-      chapter_id: req.query.chapterId || req.query.chapter_id
+      node_id: req.query.nodeId ?? req.query.node_id ?? req.query.chapterId ?? req.query.chapter_id
     });
     res.json(records);
   })
@@ -178,7 +103,10 @@ router.get(
 router.post(
   "/hadeeth",
   asyncHandler(async (req, res) => {
-    const record = await hadeethService.createHadeeth(req.body);
+    const record = await hadeethService.createHadeeth({
+      ...req.body,
+      node_id: req.body.node_id ?? req.body.chapter_id
+    });
     res.status(201).json(record);
   })
 );
@@ -195,7 +123,11 @@ router.get(
 );
 
 async function updateHadeeth(req, res) {
-  const record = await hadeethService.updateHadeeth(req.params.id, req.body);
+  const payload = { ...req.body };
+  if (payload.chapter_id && !payload.node_id) payload.node_id = payload.chapter_id;
+  delete payload.chapter_id;
+
+  const record = await hadeethService.updateHadeeth(req.params.id, payload);
   if (!record) {
     return res.status(404).json({ message: "Hadeeth not found." });
   }
@@ -215,40 +147,9 @@ router.delete(
   })
 );
 
-router.post(
-  "/cleanup-trial-data",
-  asyncHandler(async (req, res) => {
-    const result = await cleanupTrialData(pool);
-    res.json(result);
-  })
-);
-
-router.post(
-  "/import-collection",
-  asyncHandler(async (req, res) => {
-    const stats = await importCollection(req.body);
-    res.status(201).json({
-      message: "Collection imported",
-      stats
-    });
-  })
-);
-
-router.post(
-  "/import-kitab",
-  asyncHandler(async (req, res) => {
-    const result = await importKitab(req.body);
-    res.status(201).json({ message: "Kitab imported", result });
-  })
-);
-
-router.get(
-  "/cleanup-trial-data/preview",
-  asyncHandler(async (req, res) => {
-    const result = await cleanupTrialData.previewTrialDataCleanup(pool);
-    res.json(result);
-  })
-);
+// =====================================================================
+// Languages CRUD
+// =====================================================================
 
 router.get(
   "/languages",
@@ -298,9 +199,48 @@ router.delete(
   })
 );
 
-// POST /admin/import-json
-// Accepts JSON body, writes it to sample_imports/<filename>.json and attempts
-// to import contained records into the running mock or database-backed API.
+// =====================================================================
+// Import handlers
+// =====================================================================
+
+router.post(
+  "/cleanup-trial-data",
+  asyncHandler(async (req, res) => {
+    const cleanupTrialData = require("../../utils/cleanup-trial-data");
+    const result = await cleanupTrialData(pool);
+    res.json(result);
+  })
+);
+
+router.post(
+  "/import-collection",
+  asyncHandler(async (req, res) => {
+    const stats = await importCollection(req.body);
+    res.status(201).json({
+      message: "Collection imported",
+      stats
+    });
+  })
+);
+
+router.post(
+  "/import-kitab",
+  asyncHandler(async (req, res) => {
+    const result = await importKitab(req.body);
+    res.status(201).json({ message: "Kitab imported", result });
+  })
+);
+
+router.get(
+  "/cleanup-trial-data/preview",
+  asyncHandler(async (req, res) => {
+    const cleanupTrialData = require("../../utils/cleanup-trial-data");
+    const result = await cleanupTrialData.previewTrialDataCleanup(pool);
+    res.json(result);
+  })
+);
+
+// POST /admin/import-json — recursive node JSON importer
 router.post(
   "/import-json",
   asyncHandler(async (req, res) => {
@@ -315,6 +255,7 @@ router.post(
     const outPath = path.join(outDir, filename);
     await fs.writeFile(outPath, JSON.stringify(data, null, 2), "utf8");
 
+    // Try legacy import first, then fall back to recursive node importer
     if (isCollectionImport(data)) {
       const stats = await importCollection(data);
       return res.status(201).json({
@@ -333,179 +274,127 @@ router.post(
       });
     }
 
-    // Attempt to import into running backend state
-    try {
-      const env = require("../../config/env");
+    // Recursive node-based import
+    const stats = { nodes: 0, hadiths: 0, errors: [] };
 
-      // Helper to map created IDs when importing relational data
-      const idMap = { books: new Map(), kitabs: new Map(), chapters: new Map() };
+    async function importNode(jsonObj, parentId) {
+      if (!jsonObj || typeof jsonObj !== "object") return;
 
-      // Import languages
-      if (Array.isArray(data.languages) && data.languages.length) {
-        if (env.useMockApi) {
-          const mock = require("../../mock/store");
-          for (const lang of data.languages) {
-            try {
-              mock.createLanguage({ code: lang.code || String(lang), name: lang.name || lang.code || String(lang) });
-            } catch (e) {
-              // ignore individual failures
+      const title = jsonObj.title || jsonObj.name || "";
+      if (!title) return;
+
+      const type = jsonObj.type || parentId === null ? "book" : "chapter";
+      const sortOrder = jsonObj.sort_order ?? jsonObj.order ?? 0;
+
+      let node;
+      try {
+        node = await nodesService.createNode({
+          parent_id: parentId,
+          type,
+          title,
+          is_published: jsonObj.is_published ?? true,
+          sort_order: sortOrder
+        });
+        stats.nodes++;
+      } catch (err) {
+        stats.errors.push({ title, error: err.message });
+        return;
+      }
+
+      for (const key of Object.keys(jsonObj)) {
+        if (Array.isArray(jsonObj[key])) {
+          if (key === "hadiths" || key === "hadeeth") {
+            for (const h of jsonObj[key]) {
+              try {
+                await hadeethService.createHadeeth({
+                  node_id: node.id,
+                  reference_number: Number(h.number ?? h.reference_number ?? h.reference ?? 0),
+                  arabic: String(h.arabic ?? ""),
+                  tamil: String(h.tamil ?? ""),
+                  english: String(h.english ?? h.hadeeth ?? h.content ?? ""),
+                  reported_by: String(h.reported_by ?? h.reportedBy ?? ""),
+                  grade: String(h.grade ?? ""),
+                  is_published: h.is_published ?? true
+                });
+                stats.hadiths++;
+              } catch (err) {
+                stats.errors.push({ hadith: h.number || "?", error: err.message });
+              }
+            }
+          } else {
+            for (const child of jsonObj[key]) {
+              await importNode(child, node.id);
             }
           }
-        } else {
-          for (const lang of data.languages) {
-            try {
-              await languagesService.createLanguage({
-                code: String(lang.code || "").trim().toLowerCase(),
-                name: String(lang.name || lang.code || "").trim(),
-                nativeName: String(lang.nativeName || lang.name || "").trim(),
-                direction: lang.direction || "ltr"
-              });
-            } catch (e) {}
-          }
         }
       }
-
-      // Import books
-      if (Array.isArray(data.books) && data.books.length) {
-        for (const book of data.books) {
-          try {
-            if (env.useMockApi) {
-              const mock = require("../../mock/store");
-              const payload = {
-                slug: book.slug,
-                collectionNumber: book.collectionNumber,
-                author: book.author || "",
-                isPublished: book.is_published ?? book.isPublished ?? true,
-                translations: {
-                  en: { title: book.title || book.name || "", summary: book.summary || book.notes || "" }
-                }
-              };
-              const created = mock.createBook(payload);
-              if (book.id) idMap.books.set(book.id, created.id);
-            } else {
-              const created = await booksService.createBook({
-                title: book.title || book.name || "",
-                author: book.author || "",
-                notes: book.summary || book.notes || null,
-                is_published: book.is_published ?? book.isPublished ?? true,
-                lang_code: book.lang_code || book.langCode || null
-              });
-              if (book.id) idMap.books.set(book.id, created.id);
-            }
-          } catch (e) {
-            // ignore individual failures
-          }
-        }
-      }
-
-      // Import kitabs (map book ids)
-      if (Array.isArray(data.kitabs) && data.kitabs.length) {
-        for (const kitab of data.kitabs) {
-          try {
-            const bookId = kitab.bookId || kitab.book_id;
-            const mappedBookId = bookId && idMap.books.has(bookId) ? idMap.books.get(bookId) : bookId;
-
-            if (env.useMockApi) {
-              const mock = require("../../mock/store");
-              const created = mock.createKitab({
-                bookId: mappedBookId || kitab.bookId || kitab.book_id || null,
-                isPublished: kitab.is_published ?? kitab.isPublished ?? true,
-                translations: { en: { title: kitab.title || "" } },
-                notes: kitab.notes || "",
-                langCode: kitab.lang_code || kitab.langCode || null
-              });
-              if (kitab.id) idMap.kitabs.set(kitab.id, created.id);
-            } else {
-              const created = await kitabsService.createKitab({
-                title: kitab.title || "",
-                book_id: mappedBookId || kitab.bookId || kitab.book_id || null,
-                is_published: kitab.is_published ?? kitab.isPublished ?? true,
-                notes: kitab.notes || kitab.summary || null,
-                lang_code: kitab.lang_code || kitab.langCode || null
-              });
-              if (kitab.id) idMap.kitabs.set(kitab.id, created.id);
-            }
-          } catch (e) {}
-        }
-      }
-
-      // Import chapters (map book and kitab ids)
-      if (Array.isArray(data.chapters) && data.chapters.length) {
-        for (const chapter of data.chapters) {
-          try {
-            const bookId = chapter.bookId || chapter.book_id;
-            const mappedBookId = bookId && idMap.books.has(bookId) ? idMap.books.get(bookId) : bookId;
-            const kitabId = chapter.kitabId || chapter.kitab_id;
-            const mappedKitabId = kitabId && idMap.kitabs.has(kitabId) ? idMap.kitabs.get(kitabId) : kitabId;
-
-            if (env.useMockApi) {
-              const mock = require("../../mock/store");
-              const payload = {
-                bookId: mappedBookId || chapter.bookId || chapter.book_id || null,
-                kitabId: mappedKitabId || chapter.kitabId || chapter.kitab_id || null,
-                chapterNumber: chapter.chapterNumber || chapter.number || null,
-                isPublished: chapter.is_published ?? chapter.isPublished ?? true,
-                translations: { en: { title: chapter.title || "", introduction: chapter.introduction || chapter.content || "" } }
-              };
-              const created = mock.createChapter(payload);
-              if (chapter.id) idMap.chapters.set(chapter.id, created.id);
-            } else {
-              const created = await chaptersService.createChapter({
-                title: chapter.title || "",
-                book_id: mappedBookId || chapter.bookId || chapter.book_id || null,
-                kitab_id: mappedKitabId || chapter.kitabId || chapter.kitab_id || null,
-                is_published: chapter.is_published ?? chapter.isPublished ?? true,
-                notes: chapter.notes || chapter.summary || null,
-                lang_code: chapter.lang_code || chapter.langCode || null
-              });
-              if (chapter.id) idMap.chapters.set(chapter.id, created.id);
-            }
-          } catch (e) {}
-        }
-      }
-
-      // Import hadeeth (map chapter ids)
-      if (Array.isArray(data.hadeeth) && data.hadeeth.length) {
-        for (const item of data.hadeeth) {
-          try {
-            const chapterId = item.chapterId || item.chapter_id;
-            const mappedChapterId = chapterId && idMap.chapters.has(chapterId) ? idMap.chapters.get(chapterId) : chapterId;
-
-            if (env.useMockApi) {
-              const mock = require("../../mock/store");
-              const payload = {
-                chapterId: mappedChapterId || item.chapterId || item.chapter_id || null,
-                hadithNumber: item.hadithNumber || item.number || null,
-                referenceNumber: item.referenceNumber || item.reference || null,
-                reportedBy: item.reportedBy || item.reported_by || "",
-                grade: item.grade || null,
-                isPublished: item.is_published ?? item.isPublished ?? true,
-                translations: { en: { text: item.english || item.hadeeth || item.content || "", notes: item.notes || "" } }
-              };
-              mock.createHadeeth(payload);
-            } else {
-              await hadeethService.createHadeeth({
-                chapter_id: mappedChapterId || item.chapterId || item.chapter_id || null,
-                reference_number: Number(
-                  item.reference_number ?? item.referenceNumber ?? item.refernce_number ?? 0
-                ),
-                arabic: String(item.arabic ?? ""),
-                tamil: String(item.tamil ?? ""),
-                english: String(item.english ?? item.hadeeth ?? item.content ?? ""),
-                reported_by: item.reportedBy || item.reported_by || "",
-                grade: String(item.grade ?? ""),
-                is_published: item.is_published ?? item.isPublished ?? true
-              });
-            }
-          } catch (e) {}
-        }
-      }
-    } catch (err) {
-      // Non-fatal — file was saved; import attempt failed for some entries
-      console.warn("Import attempt failed:", err && err.message);
     }
 
-    return res.status(201).json({ message: "Imported", file: `sample_imports/${filename}` });
+    await importNode(data, null);
+
+    res.status(201).json({
+      message: "Imported via recursive node walk",
+      file: `sample_imports/${filename}`,
+      stats
+    });
+  })
+);
+
+// =====================================================================
+// Legacy backward-compat admin routes (delegate to nodes)
+// =====================================================================
+
+router.get(
+  "/books",
+  asyncHandler(async (req, res) => {
+    const nodes = await nodesService.listNodes({ parent_id: "null", type: "book" });
+    res.json(nodes);
+  })
+);
+
+router.post(
+  "/books",
+  asyncHandler(async (req, res) => {
+    const node = await nodesService.createNode({
+      parent_id: null,
+      type: "book",
+      title: req.body.title,
+      is_published: req.body.is_published ?? req.body.isPublished ?? false
+    });
+    res.status(201).json(node);
+  })
+);
+
+router.get(
+  "/books/:id",
+  asyncHandler(async (req, res) => {
+    const node = await nodesService.getNodeById(req.params.id);
+    if (!node) return res.status(404).json({ message: "Book not found." });
+    return res.json(node);
+  })
+);
+
+async function updateBook(req, res) {
+  const node = await nodesService.updateNode(req.params.id, {
+    title: req.body.title,
+    is_published: req.body.is_published ?? req.body.isPublished
+  });
+  if (!node) return res.status(404).json({ message: "Book not found." });
+  return res.json(node);
+}
+
+router.patch("/books/:id", asyncHandler(updateBook));
+router.put("/books/:id", asyncHandler(updateBook));
+
+router.delete(
+  "/books/:id",
+  asyncHandler(async (req, res) => {
+    try {
+      const removed = await nodesService.deleteNode(req.params.id);
+      return removed ? res.status(204).send() : res.status(404).json({ message: "Book not found." });
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
+    }
   })
 );
 

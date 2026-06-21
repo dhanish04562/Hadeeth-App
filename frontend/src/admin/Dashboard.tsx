@@ -7,18 +7,19 @@ import { useDB, db as api } from "@/data/store";
 import type { ImportCollectionResponse } from "@/data/import";
 import { normalizeImportStats } from "@/data/import";
 import { appendImportLog, summarizeImportStats } from "./import-log";
-import { BookOpenText, ListTree, Library, ScrollText, Languages } from "lucide-react";
+import { BookOpenText, ListTree, Library, ScrollText, Languages, GitFork } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   const db = useDB();
   const [importLogKey, setImportLogKey] = useState(0);
 
+  const rootNodes = db.nodes.filter((n) => !n.parent_id);
+
   const stats = [
-    { label: "Books", value: db.books.length, icon: BookOpenText, to: "/admin/books" },
-    { label: "Kitabs", value: db.kitabs.length, icon: Library, to: "/admin/kitabs" },
-    { label: "Chapters", value: db.chapters.length, icon: ListTree, to: "/admin/chapters" },
-    { label: "Hadeeth", value: db.hadeeth.length, icon: ScrollText, to: "/admin/hadeeth" },
+    { label: "Root Nodes", value: rootNodes.length, icon: GitFork, to: "/admin/nodes" },
+    { label: "Total Nodes", value: db.nodes.length, icon: ListTree, to: "/admin/nodes" },
+    { label: "Hadith", value: db.hadeeth.length, icon: ScrollText, to: "/admin/hadeeth" },
     { label: "Languages", value: db.languages.length, icon: Languages, to: "/admin/languages" },
   ];
 
@@ -58,26 +59,31 @@ const Dashboard = () => {
         const logStats = normalizeImportStats(body.stats);
         appendImportLog({
           filename: file.name,
-          book_title: body.stats.book_title,
-          status: "success",
-          message: body.message,
-          stats: logStats,
+          book_title: typeof payload.book_title === "string" ? payload.book_title : undefined,
+          status: logStats.errors > 0 ? "partial" : "success",
+          message: summarizeImportStats(body),
+          ...logStats,
         });
-        setImportLogKey((k) => k + 1);
-        toast.success(`Import complete · ${summarizeImportStats(logStats)}`);
       } else {
         appendImportLog({
           filename: file.name,
+          book_title: typeof payload.book_title === "string" ? payload.book_title : undefined,
           status: "success",
-          message: body.message || "File uploaded",
+          message: body.message || "Imported",
         });
-        setImportLogKey((k) => k + 1);
-        toast.success(body.message || "File uploaded");
       }
 
+      setImportLogKey((k) => k + 1);
       await api.refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.success("Data imported successfully");
+    } catch (err: any) {
+      appendImportLog({
+        filename: file.name,
+        status: "error",
+        message: err.message || "Import failed",
+      });
+      setImportLogKey((k) => k + 1);
+      toast.error(err.message || "Import failed");
     }
   };
 
@@ -85,54 +91,56 @@ const Dashboard = () => {
     <AdminLayout>
       <AdminPageHeader
         title="Dashboard"
-        subtitle="Manage the entire hadeeth library from a single place."
-        onUpload={handleUpload}
-        uploadLabel="Import JSON"
+        withUpload={{
+          handleUpload,
+          label: "Upload JSON",
+        }}
       />
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-        {stats.map((s) => (
+      {/* Stats grid */}
+      <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {stats.map((stat) => (
           <Link
-            key={s.label}
-            to={s.to}
-            className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elegant"
+            key={stat.label}
+            to={stat.to}
+            className="group rounded-xl border border-border/60 bg-card p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elegant"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/5 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-              <s.icon className="h-5 w-5" />
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/5 text-primary ring-1 ring-primary/10">
+              <stat.icon className="h-5 w-5" />
             </div>
-            <p className="mt-5 font-serif text-4xl text-foreground">
-              {s.value.toLocaleString()}
+            <p className="font-serif text-2xl text-foreground group-hover:text-primary">
+              {stat.value}
             </p>
-            <p className="text-sm text-muted-foreground">{s.label}</p>
+            <p className="text-xs text-muted-foreground">{stat.label}</p>
           </Link>
         ))}
       </div>
 
-      <ImportLog refreshKey={importLogKey} />
-
-      <div className="mt-12 rounded-2xl border border-border bg-card p-6 md:p-8">
-        <h2 className="mb-5 font-serif text-2xl text-foreground">Recent hadeeth</h2>
-        <div className="divide-y divide-border">
+      {/* Recent hadith */}
+      <div className="mb-10 rounded-xl border border-border/60 bg-card">
+        <div className="border-b border-border/60 px-6 py-4">
+          <h2 className="font-serif text-lg text-foreground">Recent Hadith</h2>
+        </div>
+        <div className="divide-y divide-border/40">
+          {recent.length === 0 && (
+            <p className="p-6 text-sm text-muted-foreground">No hadith yet.</p>
+          )}
           {recent.map((h) => (
             <Link
               key={h.id}
-              to={`/admin/hadeeth?edit=${h.id}`}
-              className="flex items-center justify-between gap-4 py-4 transition-colors hover:bg-muted/40"
+              to={`/hadeeth/${h.id}`}
+              className="flex items-center justify-between px-6 py-3 transition-colors hover:bg-accent/5"
             >
-              <div className="min-w-0">
-                <p className="line-clamp-1 font-serif text-base text-foreground">
-                  {h.arabic || h.english}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  #{h.referenceNumber} · {h.reportedBy}
-                  {h.grade ? ` · ${h.grade}` : ""}
-                </p>
-              </div>
-              <span className="shrink-0 text-xs text-muted-foreground">{h.bookId}</span>
+              <span className="line-clamp-1 text-sm text-foreground">
+                {h.tamil || h.english || h.arabic}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">{h.referenceNumber}</span>
             </Link>
           ))}
         </div>
       </div>
+
+      <ImportLog key={importLogKey} />
     </AdminLayout>
   );
 };

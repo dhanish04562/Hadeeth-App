@@ -1,6 +1,6 @@
-const app = require("./app");
 const env = require("./config/env");
 const pool = require("./db/pool");
+const app = require("./app");
 
 async function startServer() {
   try {

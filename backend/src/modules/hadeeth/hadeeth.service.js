@@ -3,15 +3,15 @@ const createId = require("../../utils/create-id");
 const pickDefined = require("../../utils/pick-defined");
 
 const SELECT_FIELDS =
-  "id, chapter_id, reference_number, arabic, tamil, english, reported_by, grade, is_published";
+  "id, node_id, reference_number, arabic, tamil, english, reported_by, grade, is_published";
 
 async function listHadeeth(filters) {
   const conditions = [];
   const values = [];
 
-  if (filters.chapter_id) {
-    values.push(filters.chapter_id);
-    conditions.push(`chapter_id = $${values.length}`);
+  if (filters.node_id) {
+    values.push(filters.node_id);
+    conditions.push(`node_id = $${values.length}`);
   }
 
   if (filters.reference_number !== undefined) {
@@ -44,16 +44,16 @@ async function getHadeethById(id) {
   return rows[0] || null;
 }
 
-async function findHadeethByChapterAndReference(chapterId, referenceNumber) {
+async function findHadeethByNodeAndReference(nodeId, referenceNumber) {
   const { rows } = await pool.query(
     `
       SELECT ${SELECT_FIELDS}
       FROM hadeeth
-      WHERE chapter_id = $1
+      WHERE node_id = $1
         AND reference_number = $2
       LIMIT 1
     `,
-    [chapterId, referenceNumber]
+    [nodeId, referenceNumber]
   );
   return rows[0] || null;
 }
@@ -61,7 +61,7 @@ async function findHadeethByChapterAndReference(chapterId, referenceNumber) {
 async function createHadeeth(payload) {
   const id = createId();
   const {
-    chapter_id,
+    node_id,
     reference_number,
     arabic,
     tamil,
@@ -74,14 +74,14 @@ async function createHadeeth(payload) {
   const { rows } = await pool.query(
     `
       INSERT INTO hadeeth (
-        id, chapter_id, reference_number, arabic, tamil, english, reported_by, grade, is_published
+        id, node_id, reference_number, arabic, tamil, english, reported_by, grade, is_published
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING ${SELECT_FIELDS}
     `,
     [
       id,
-      chapter_id || null,
+      node_id || null,
       reference_number ?? null,
       arabic || null,
       tamil || null,
@@ -97,7 +97,7 @@ async function createHadeeth(payload) {
 
 async function updateHadeeth(id, payload) {
   const allowed = [
-    "chapter_id",
+    "node_id",
     "reference_number",
     "arabic",
     "tamil",
@@ -143,7 +143,7 @@ async function deleteHadeeth(id) {
 module.exports = {
   listHadeeth,
   getHadeethById,
-  findHadeethByChapterAndReference,
+  findHadeethByNodeAndReference,
   createHadeeth,
   updateHadeeth,
   deleteHadeeth

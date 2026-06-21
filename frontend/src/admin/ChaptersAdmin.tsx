@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { AdminLayout } from "./AdminLayout";
 import { AdminPageHeader, EmptyState, useConfirm } from "./AdminUI";
-import { Chapter, db, useDB } from "@/data/store";
+import { db, useDB, getChildren } from "@/data/store";
+type Chapter = { id: string; bookId: string; kitabId: string; title: string; notes: string; isPublished: boolean; langCode: string; hadeethCount: number; };
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

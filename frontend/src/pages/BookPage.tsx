@@ -50,6 +50,7 @@ const BookPage = () => {
     return base.filter(
       (h) =>
         h.english.toLowerCase().includes(needle) ||
+        h.tamil.toLowerCase().includes(needle) ||
         h.arabic.toLowerCase().includes(needle) ||
         h.reportedBy.toLowerCase().includes(needle)
     );

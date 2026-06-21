@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useDB } from "@/data/store";
+import { useDB, getChildren } from "@/data/store";
 import { NuurLogo } from "./NuurLogo";
 
 const nav = [
@@ -22,12 +22,14 @@ const nav = [
 ];
 
 export function AppSidebar() {
-  const { books } = useDB();
+  const { nodes } = useDB();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
+
+  const rootNodes = getChildren(nodes, null);
 
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
@@ -68,16 +70,16 @@ export function AppSidebar() {
           <SidebarGroupLabel>Collections</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {books.map((book) => (
-                <SidebarMenuItem key={book.id}>
+              {rootNodes.map((node) => (
+                <SidebarMenuItem key={node.id}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === `/book/${book.id}`}
-                    tooltip={book.title}
+                    isActive={pathname === `/node/${node.id}`}
+                    tooltip={node.title}
                   >
-                    <Link to={`/book/${book.id}`}>
+                    <Link to={`/node/${node.id}`}>
                       <BookOpen className="h-4 w-4" />
-                      <span className="truncate">{book.title}</span>
+                      <span className="truncate">{node.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

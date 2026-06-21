@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import {
@@ -10,12 +10,13 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { useDB } from "@/data/store";
+import { useDB, getChildren } from "@/data/store";
 import { Button } from "@/components/ui/button";
 
 export function SearchPalette() {
-  const { books, hadeeth } = useDB();
+  const { nodes, hadeeth } = useDB();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,6 +29,31 @@ export function SearchPalette() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  const needle = query.trim().toLowerCase();
+
+  const rootNodes = useMemo(() => getChildren(nodes, null), [nodes]);
+
+  const filteredNodes = useMemo(
+    () =>
+      needle
+        ? nodes.filter((n) =>
+            n.title.toLowerCase().includes(needle)
+          )
+        : rootNodes,
+    [nodes, rootNodes, needle]
+  );
+
+  const filteredHadeeth = useMemo(
+    () =>
+      needle
+        ? hadeeth.filter((h) =>
+            [h.english, h.tamil, h.arabic, h.reportedBy, String(h.referenceNumber)]
+              .join(" ").toLowerCase().includes(needle)
+          )
+        : hadeeth,
+    [hadeeth, needle]
+  );
 
   return (
     <>
@@ -46,26 +72,30 @@ export function SearchPalette() {
       </Button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Search the library…" />
+        <CommandInput
+          placeholder="Search the library…"
+          value={query}
+          onValueChange={setQuery}
+        />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Books">
-            {books.map((b) => (
+          <CommandGroup heading="Sections">
+            {filteredNodes.slice(0, 5).map((n) => (
               <CommandItem
-                key={b.id}
+                key={n.id}
                 onSelect={() => {
-                  navigate(`/book/${b.id}`);
+                  navigate(`/node/${n.id}`);
                   setOpen(false);
                 }}
               >
-                {b.title}
-                <span className="ml-auto text-xs text-muted-foreground">{b.author}</span>
+                {n.title}
+                <span className="ml-auto text-xs text-muted-foreground">{n.type}</span>
               </CommandItem>
             ))}
           </CommandGroup>
           <CommandSeparator />
-          <CommandGroup heading="Hadeeth">
-            {hadeeth.slice(0, 8).map((h) => (
+          <CommandGroup heading="Hadith">
+            {filteredHadeeth.slice(0, 8).map((h) => (
               <CommandItem
                 key={h.id}
                 onSelect={() => {
@@ -73,7 +103,7 @@ export function SearchPalette() {
                   setOpen(false);
                 }}
               >
-                <span className="line-clamp-1">{h.english}</span>
+                <span className="line-clamp-1">{h.tamil || h.english || h.arabic}</span>
               </CommandItem>
             ))}
           </CommandGroup>

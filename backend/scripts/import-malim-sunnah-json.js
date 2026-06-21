@@ -96,11 +96,12 @@ async function importJson(jsonPath) {
           const references = text(hadith.references);
 
           await client.query(
-            `INSERT INTO hadeeth (id, chapter_id, reference_number, arabic, english, reported_by, grade, is_published)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+            `INSERT INTO hadeeth (id, chapter_id, reference_number, arabic, tamil, english, reported_by, grade, is_published)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
              ON CONFLICT (id) DO UPDATE SET
                chapter_id = EXCLUDED.chapter_id,
                arabic = EXCLUDED.arabic,
+               tamil = EXCLUDED.tamil,
                english = EXCLUDED.english,
                is_published = true`,
             [
@@ -109,6 +110,7 @@ async function importJson(jsonPath) {
               hi + 1,
               arabicText,
               tamilText,
+              null,
               references || null,
               null
             ]

@@ -5,24 +5,24 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "./pages/NotFound.tsx";
 import Index from "./pages/Index.tsx";
-import BookPage from "./pages/BookPage.tsx";
+import NodePage from "./pages/NodePage.tsx";
 import HadeethPage from "./pages/HadeethPage.tsx";
 import Collections from "./pages/Collections.tsx";
 import Bookmarks from "./pages/Bookmarks.tsx";
 import AdminLogin from "./admin/AdminLogin.tsx";
 import Dashboard from "./admin/Dashboard.tsx";
-import BooksAdmin from "./admin/BooksAdmin.tsx";
-import KitabsAdmin from "./admin/KitabsAdmin.tsx";
-import ChaptersAdmin from "./admin/ChaptersAdmin.tsx";
+import NodesAdmin from "./admin/NodesAdmin.tsx";
 import HadeethAdmin from "./admin/HadeethAdmin.tsx";
 import LanguagesAdmin from "./admin/LanguagesAdmin.tsx";
 import { DBProvider } from "./data/store";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <DBProvider>
+      <LanguageProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -31,15 +31,14 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/collections" element={<Collections />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
-            <Route path="/book/:id" element={<BookPage />} />
+            <Route path="/node/:id" element={<NodePage />} />
+            <Route path="/book/:id" element={<NodePage />} />
             <Route path="/hadeeth/:id" element={<HadeethPage />} />
 
             {/* Admin */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<Dashboard />} />
-            <Route path="/admin/books" element={<BooksAdmin />} />
-            <Route path="/admin/kitabs" element={<KitabsAdmin />} />
-            <Route path="/admin/chapters" element={<ChaptersAdmin />} />
+            <Route path="/admin/nodes" element={<NodesAdmin />} />
             <Route path="/admin/hadeeth" element={<HadeethAdmin />} />
             <Route path="/admin/languages" element={<LanguagesAdmin />} />
 
@@ -48,6 +47,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </LanguageProvider>
     </DBProvider>
   </QueryClientProvider>
 );
