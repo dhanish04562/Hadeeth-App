@@ -61,7 +61,7 @@ const Dashboard = () => {
           filename: file.name,
           book_title: typeof payload.book_title === "string" ? payload.book_title : undefined,
           status: logStats.errors > 0 ? "partial" : "success",
-          message: summarizeImportStats(body),
+          message: summarizeImportStats(logStats),
           ...logStats,
         });
       } else {

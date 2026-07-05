@@ -100,63 +100,10 @@ async function importNode(obj, parentId, depth, client) {
   return id;
 }
 
-async function setupSchema(client) {
-  console.log("Setting up schema...");
-
-  await client.query("DROP TABLE IF EXISTS hadeeth CASCADE");
-  await client.query("DROP TABLE IF EXISTS nodes CASCADE");
-  await client.query("DROP TABLE IF EXISTS languages CASCADE");
-  await client.query("CREATE EXTENSION IF NOT EXISTS ltree");
-
-  await client.query(`
-    CREATE TABLE languages (
-      code VARCHAR(6) PRIMARY KEY,
-      name VARCHAR(24) NOT NULL
-    )
-  `);
-
-  await client.query(`
-    CREATE TABLE nodes (
-      id VARCHAR(24) PRIMARY KEY,
-      parent_id VARCHAR(24) REFERENCES nodes(id) ON DELETE CASCADE,
-      type VARCHAR(32) NOT NULL DEFAULT 'node',
-      title TEXT NOT NULL DEFAULT '',
-      path LTREE,
-      is_published BOOLEAN DEFAULT TRUE,
-      sort_order INT DEFAULT 0,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-
-  await client.query(`
-    CREATE TABLE hadeeth (
-      id VARCHAR(24) PRIMARY KEY,
-      node_id VARCHAR(24) REFERENCES nodes(id) ON DELETE CASCADE,
-      reference_number INT,
-      arabic TEXT,
-      tamil TEXT,
-      english TEXT,
-      reported_by TEXT,
-      grade VARCHAR(64),
-      is_published BOOLEAN DEFAULT TRUE
-    )
-  `);
-
-  await client.query("CREATE INDEX IF NOT EXISTS idx_nodes_parent_id ON nodes(parent_id)");
-  await client.query("CREATE INDEX IF NOT EXISTS idx_nodes_path ON nodes USING GIST (path)");
-  await client.query("CREATE INDEX IF NOT EXISTS idx_hadeeth_node_id ON hadeeth(node_id)");
-
-  await client.query("INSERT INTO languages (code, name) VALUES ('ar', 'Arabic') ON CONFLICT (code) DO NOTHING");
-  await client.query("INSERT INTO languages (code, name) VALUES ('ta', 'Tamil') ON CONFLICT (code) DO NOTHING");
-
-  console.log("Schema ready");
-}
-
 async function main() {
   const jsonPath = process.argv[2];
   if (!jsonPath) {
-    console.error("Usage: node scripts/setup-and-import.js <path-to-json>");
+    console.error("Usage: node scripts/import-nodes.js <path-to-json>");
     process.exit(1);
   }
 
@@ -165,7 +112,9 @@ async function main() {
 
   try {
     await client.query("BEGIN");
-    await setupSchema(client);
+
+    await client.query(`INSERT INTO languages (code, name) VALUES ('ar', 'Arabic') ON CONFLICT (code) DO NOTHING`);
+    await client.query(`INSERT INTO languages (code, name) VALUES ('ta', 'Tamil') ON CONFLICT (code) DO NOTHING`);
 
     if (Array.isArray(data)) {
       for (const item of data) {
@@ -176,10 +125,10 @@ async function main() {
     }
 
     await client.query("COMMIT");
-    console.log("Done");
+    console.log("Import complete");
   } catch (error) {
     await client.query("ROLLBACK");
-    console.error("Failed:", error.message);
+    console.error("Import failed:", error.message);
     throw error;
   } finally {
     client.release();

@@ -37,14 +37,15 @@ export function clearImportLog() {
 }
 
 export function summarizeImportStats(stats: ImportLogStats): string {
-  return [
-    `${stats.kitabs_created} kitab(s)`,
-    `${stats.chapters_created} chapter(s)`,
-    `${stats.hadeeth_created} hadith(s)`,
+  const parts = [
+    `${stats.nodes_created} node(s)`,
+    `${stats.hadiths_created} hadith(s)`,
     stats.duplicates_skipped
       ? `${stats.duplicates_skipped} duplicate(s) skipped`
       : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  ];
+  if (stats.errors?.length) {
+    parts.push(`${stats.errors.length} error(s)`);
+  }
+  return parts.filter(Boolean).join(" · ");
 }

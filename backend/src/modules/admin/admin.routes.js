@@ -240,7 +240,7 @@ router.get(
   })
 );
 
-// POST /admin/import-json — recursive node JSON importer
+// POST /admin/import-json — unified recursive node importer (handles all shapes)
 router.post(
   "/import-json",
   asyncHandler(async (req, res) => {
@@ -255,35 +255,15 @@ router.post(
     const outPath = path.join(outDir, filename);
     await fs.writeFile(outPath, JSON.stringify(data, null, 2), "utf8");
 
-    // Try legacy import first, then fall back to recursive node importer
-    if (isCollectionImport(data)) {
-      const stats = await importCollection(data);
-      return res.status(201).json({
-        message: "Collection imported",
-        file: `sample_imports/${filename}`,
-        stats
-      });
-    }
-
-    if (isKitabImport(data)) {
-      const result = await importKitab(data);
-      return res.status(201).json({
-        message: "Kitab imported",
-        file: `sample_imports/${filename}`,
-        result
-      });
-    }
-
-    // Recursive node-based import
-    const stats = { nodes: 0, hadiths: 0, errors: [] };
+    const stats = { nodes_created: 0, hadiths_created: 0, duplicates_skipped: 0, errors: [] };
 
     async function importNode(jsonObj, parentId) {
       if (!jsonObj || typeof jsonObj !== "object") return;
 
-      const title = jsonObj.title || jsonObj.name || "";
+      const title = jsonObj.title || jsonObj.name || jsonObj.book_title || jsonObj.book_name_ar || "";
       if (!title) return;
 
-      const type = jsonObj.type || parentId === null ? "book" : "chapter";
+      const type = jsonObj.type || (parentId === null ? "book" : "chapter");
       const sortOrder = jsonObj.sort_order ?? jsonObj.order ?? 0;
 
       let node;
@@ -295,7 +275,7 @@ router.post(
           is_published: jsonObj.is_published ?? true,
           sort_order: sortOrder
         });
-        stats.nodes++;
+        stats.nodes_created++;
       } catch (err) {
         stats.errors.push({ title, error: err.message });
         return;
@@ -316,7 +296,7 @@ router.post(
                   grade: String(h.grade ?? ""),
                   is_published: h.is_published ?? true
                 });
-                stats.hadiths++;
+                stats.hadiths_created++;
               } catch (err) {
                 stats.errors.push({ hadith: h.number || "?", error: err.message });
               }

@@ -30,15 +30,10 @@ export type ImportCollectionPayload = {
 
 /** Canonical import statistics returned after each import. */
 export type ImportLogStats = {
-  kitabs_created: number;
-  chapters_created: number;
-  hadeeth_created: number;
+  nodes_created: number;
+  hadiths_created: number;
   duplicates_skipped: number;
-};
-
-export type ImportCollectionStats = ImportLogStats & {
-  book_id?: string;
-  book_title?: string;
+  errors: { title?: string; hadith?: string; error: string }[];
 };
 
 export type ImportLogEntry = {
@@ -46,7 +41,7 @@ export type ImportLogEntry = {
   filename: string;
   importedAt: string;
   book_title?: string;
-  status: "success" | "error";
+  status: "success" | "error" | "partial";
   message?: string;
   stats?: ImportLogStats;
 };
@@ -54,21 +49,17 @@ export type ImportLogEntry = {
 export type ImportCollectionResponse = {
   message: string;
   file?: string;
-  stats?: ImportCollectionStats;
+  stats?: ImportLogStats;
 };
 
 /** Normalize API stats (handles legacy field names). */
 export function normalizeImportStats(
-  raw?: Partial<ImportCollectionStats> & { hadiths_created?: number }
+  raw?: Record<string, unknown>
 ): ImportLogStats {
   return {
-    kitabs_created: raw?.kitabs_created ?? 0,
-    chapters_created: raw?.chapters_created ?? 0,
-    hadeeth_created: raw?.hadeeth_created ?? raw?.hadiths_created ?? 0,
-    duplicates_skipped: raw?.duplicates_skipped ?? 0,
+    nodes_created: (raw?.nodes_created ?? raw?.nodes ?? raw?.kitabs_created ?? raw?.chapters_created ?? 0) as number,
+    hadiths_created: (raw?.hadiths_created ?? raw?.hadiths ?? raw?.hadeeth_created ?? 0) as number,
+    duplicates_skipped: (raw?.duplicates_skipped ?? 0) as number,
+    errors: (Array.isArray(raw?.errors) ? raw.errors : []) as { title?: string; hadith?: string; error: string }[],
   };
-}
-
-export function formatImportStats(stats: ImportLogStats): string {
-  return JSON.stringify(stats, null, 2);
 }
