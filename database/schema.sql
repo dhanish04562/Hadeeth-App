@@ -55,9 +55,28 @@ CREATE TABLE IF NOT EXISTS chapters (
     ON DELETE SET NULL
 );
 
+CREATE EXTENSION IF NOT EXISTS ltree;
+
+CREATE TABLE IF NOT EXISTS nodes (
+  id VARCHAR(24) PRIMARY KEY,
+  parent_id VARCHAR(24) REFERENCES nodes(id) ON DELETE CASCADE,
+  type VARCHAR(32) NOT NULL DEFAULT 'node',
+  title TEXT NOT NULL DEFAULT '',
+  path LTREE,
+  is_published BOOLEAN DEFAULT TRUE,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_nodes_parent_id ON nodes(parent_id);
+CREATE INDEX IF NOT EXISTS idx_nodes_path ON nodes USING GIST (path);
+CREATE INDEX IF NOT EXISTS idx_nodes_type ON nodes(type);
+
 CREATE TABLE IF NOT EXISTS hadeeth (
   id VARCHAR(24) PRIMARY KEY,
   chapter_id VARCHAR(24),
+  node_id VARCHAR(24),
   reference_number INT,
   arabic TEXT,
   tamil TEXT,
@@ -68,9 +87,14 @@ CREATE TABLE IF NOT EXISTS hadeeth (
   CONSTRAINT fk_hadeeth_chapter
     FOREIGN KEY (chapter_id)
     REFERENCES chapters(id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_hadeeth_node
+    FOREIGN KEY (node_id)
+    REFERENCES nodes(id)
     ON DELETE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_hadeeth_node_id ON hadeeth(node_id);
 CREATE INDEX IF NOT EXISTS idx_kitabs_book_id ON kitabs(book_id);
 CREATE INDEX IF NOT EXISTS idx_chapters_kitab_id ON chapters(kitab_id);
 

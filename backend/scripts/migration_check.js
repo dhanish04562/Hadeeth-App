@@ -30,8 +30,13 @@ async function check() {
   }
 
   // Count hadith with/without node_id
-  const r5 = await c.query('SELECT COUNT(*) as total, COUNT(node_id) as with_node FROM hadeeth');
-  console.log('Hadith total:', r5.rows[0].total, 'with node_id:', r5.rows[0].with_node);
+  if (r1.rows.length > 0) {
+    const r5 = await c.query('SELECT COUNT(*) as total, COUNT(node_id) as with_node FROM hadeeth');
+    console.log('Hadith total:', r5.rows[0].total, 'with node_id:', r5.rows[0].with_node);
+  } else {
+    const r5 = await c.query('SELECT COUNT(*) as total, COUNT(chapter_id) as with_chapter FROM hadeeth');
+    console.log('Hadith total:', r5.rows[0].total, 'with chapter_id:', r5.rows[0].with_chapter);
+  }
 
   await c.release();
   await pool.end();

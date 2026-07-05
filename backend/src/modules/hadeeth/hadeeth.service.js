@@ -2,16 +2,44 @@ const pool = require("../../db/pool");
 const createId = require("../../utils/create-id");
 const pickDefined = require("../../utils/pick-defined");
 
-const SELECT_FIELDS =
-  "id, node_id, reference_number, arabic, tamil, english, reported_by, grade, is_published";
+let hasNodeIdColumnCache;
+
+async function hasNodeIdColumn() {
+  if (hasNodeIdColumnCache !== undefined) {
+    return hasNodeIdColumnCache;
+  }
+
+  const { rows } = await pool.query(
+    `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'hadeeth'
+          AND column_name = 'node_id'
+      ) AS exists
+    `
+  );
+
+  hasNodeIdColumnCache = rows[0]?.exists === true;
+  return hasNodeIdColumnCache;
+}
+
+async function getHadeethColumns() {
+  const nodeColumn = (await hasNodeIdColumn()) ? "node_id" : "chapter_id";
+  const selectFields =
+    `id, ${nodeColumn} AS node_id, reference_number, arabic, tamil, english, reported_by, grade, is_published`;
+
+  return { nodeColumn, selectFields };
+}
 
 async function listHadeeth(filters) {
+  const { nodeColumn, selectFields } = await getHadeethColumns();
   const conditions = [];
   const values = [];
 
   if (filters.node_id) {
     values.push(filters.node_id);
-    conditions.push(`node_id = $${values.length}`);
+    conditions.push(`${nodeColumn} = $${values.length}`);
   }
 
   if (filters.reference_number !== undefined) {
@@ -26,7 +54,7 @@ async function listHadeeth(filters) {
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const query = `
-    SELECT ${SELECT_FIELDS}
+    SELECT ${selectFields}
     FROM hadeeth
     ${whereClause}
     ORDER BY reference_number ASC NULLS LAST, id ASC
@@ -37,19 +65,21 @@ async function listHadeeth(filters) {
 }
 
 async function getHadeethById(id) {
+  const { selectFields } = await getHadeethColumns();
   const { rows } = await pool.query(
-    `SELECT ${SELECT_FIELDS} FROM hadeeth WHERE id = $1`,
+    `SELECT ${selectFields} FROM hadeeth WHERE id = $1`,
     [id]
   );
   return rows[0] || null;
 }
 
 async function findHadeethByNodeAndReference(nodeId, referenceNumber) {
+  const { nodeColumn, selectFields } = await getHadeethColumns();
   const { rows } = await pool.query(
     `
-      SELECT ${SELECT_FIELDS}
+      SELECT ${selectFields}
       FROM hadeeth
-      WHERE node_id = $1
+      WHERE ${nodeColumn} = $1
         AND reference_number = $2
       LIMIT 1
     `,
@@ -59,6 +89,7 @@ async function findHadeethByNodeAndReference(nodeId, referenceNumber) {
 }
 
 async function createHadeeth(payload) {
+  const { nodeColumn, selectFields } = await getHadeethColumns();
   const id = createId();
   const {
     node_id,
@@ -74,10 +105,10 @@ async function createHadeeth(payload) {
   const { rows } = await pool.query(
     `
       INSERT INTO hadeeth (
-        id, node_id, reference_number, arabic, tamil, english, reported_by, grade, is_published
+        id, ${nodeColumn}, reference_number, arabic, tamil, english, reported_by, grade, is_published
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING ${SELECT_FIELDS}
+      RETURNING ${selectFields}
     `,
     [
       id,
@@ -96,6 +127,7 @@ async function createHadeeth(payload) {
 }
 
 async function updateHadeeth(id, payload) {
+  const { nodeColumn, selectFields } = await getHadeethColumns();
   const allowed = [
     "node_id",
     "reference_number",
@@ -118,6 +150,7 @@ async function updateHadeeth(id, payload) {
   const values = entries.map(([, value]) => value);
   const setClause = entries
     .map(([key], index) => `${key} = $${index + 1}`)
+    .map((assignment) => assignment.replace(/^node_id =/, `${nodeColumn} =`))
     .join(", ");
 
   values.push(id);
@@ -127,7 +160,7 @@ async function updateHadeeth(id, payload) {
       UPDATE hadeeth
       SET ${setClause}
       WHERE id = $${values.length}
-      RETURNING ${SELECT_FIELDS}
+      RETURNING ${selectFields}
     `,
     values
   );
