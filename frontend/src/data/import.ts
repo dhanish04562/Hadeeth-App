@@ -52,6 +52,25 @@ export type ImportCollectionResponse = {
   stats?: ImportLogStats;
 };
 
+/** Returns a human-readable import statistics summary. */
+export function formatImportStats(stats: ImportLogStats): string {
+  const statsLines = [
+    `Nodes created: ${stats.nodes_created}`,
+    `Hadiths created: ${stats.hadiths_created}`,
+    `Duplicates skipped: ${stats.duplicates_skipped}`,
+  ];
+
+  if (stats.errors.length > 0) {
+    statsLines.push(`Errors: ${stats.errors.length}`);
+    stats.errors.forEach((error) => {
+      const context = error.title ?? error.hadith ?? "unknown";
+      statsLines.push(`- ${context}: ${error.error}`);
+    });
+  }
+
+  return statsLines.join("\n");
+}
+
 /** Normalize API stats (handles legacy field names). */
 export function normalizeImportStats(
   raw?: Record<string, unknown>
